@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: crm-postgres
+    environment:
+      POSTGRES_DB: crm
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: crm
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./api
+    container_name: crm-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: crm
+      DB_USER: crm
+      DB_PASSWORD: crm
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
+
