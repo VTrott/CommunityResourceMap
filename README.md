@@ -37,10 +37,11 @@ A web application that helps people discover and access community resources in t
 - **Education** (GED programs, ESL classes, computer literacy)
 
 ## Stack
-- Frontend: React + TypeScript (Vite), React Router, TanStack Query, React Hook Form, Zod
-- Backend: Spring Boot 3 (Java 21), JPA/Hibernate, Flyway, Actuator
-- DB: PostgreSQL 16
-- Local Dev: Docker Compose
+- **Frontend**: React + TypeScript (Vite), React Router, TanStack Query, React Hook Form, Zod, Tailwind CSS
+- **Backend**: Spring Boot 3 (Java 21), JPA/Hibernate, Flyway, Actuator
+- **Database**: PostgreSQL 16
+- **Local Dev**: Docker Compose
+- **UI Framework**: Tailwind CSS with custom component library
 
 ## Quick start (Docker Compose)
 Prereqs: Docker Desktop installed and running.
@@ -63,7 +64,112 @@ npm i
 npm run dev
 # open http://localhost:5173
 ```
+
+**Features:**
+- **Modern UI**: Professional design with Tailwind CSS
+- **Responsive Layout**: Works on desktop, tablet, and mobile
+- **Component Library**: Reusable UI components (Button, Input, Card, etc.)
+- **Form Validation**: Client-side validation with Zod and React Hook Form
+- **Real-time Search**: Live search with filters and pagination
+- **Category Support**: Filter and assign categories to places
+- **Type Safety**: Full TypeScript integration throughout
+
+**File Structure:**
+```
+app/src/
+├── components/
+│   ├── ui/           # Reusable UI components
+│   └── forms/        # Form components
+├── hooks/            # Custom React hooks
+├── services/         # API services
+├── types/            # TypeScript type definitions
+└── pages/            # Page components
+```
+
 Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite.config.ts`. Optional: set `VITE_API_URL`.
+
+## Frontend Features
+
+### Modern UI Design
+- **Professional Interface**: Clean, modern design with Tailwind CSS
+- **Responsive Layout**: Optimized for desktop, tablet, and mobile devices
+- **Component Library**: Reusable UI components for consistency
+- **Loading States**: Smooth loading indicators and error handling
+- **Form Validation**: Real-time validation with helpful error messages
+
+### Advanced Search & Filtering
+- **Multi-criteria Search**: Filter by name, city, state, status, and categories
+- **Real-time Results**: Instant search with pagination
+- **Category Filtering**: Select multiple categories to narrow results
+- **Sort Options**: Sort by name, date, or other fields
+- **Pagination**: Navigate through large result sets
+
+### Place Management
+- **Add Places**: Comprehensive form with validation
+- **Edit Places**: Update existing place information
+- **Delete Places**: Safe deletion with confirmation
+- **Category Assignment**: Assign multiple categories to places
+- **Status Management**: Mark places as active or inactive
+
+### Category System
+- **Category Selection**: Multi-select category picker in forms
+- **Category Display**: Visual category badges on place cards
+- **Category Filtering**: Filter search results by categories
+- **Ready for Backend**: Frontend fully prepared for category CRUD operations
+
+### Developer Experience
+- **TypeScript**: Full type safety throughout the application
+- **Custom Hooks**: Reusable data fetching and state management
+- **Modular Architecture**: Well-organized file structure for maintainability
+- **Hot Reload**: Fast development with Vite's hot module replacement
+
+## Application Screens
+
+### Home Page
+- Welcome screen with call-to-action
+- Navigation to main features
+- Clean, professional landing page
+
+### Places Page
+- **Search Interface**: Multi-criteria search form with filters
+- **Results Display**: Card-based layout showing place details
+- **Add Place Form**: Comprehensive form for adding new places
+- **Category Management**: Visual category assignment and filtering
+- **Pagination**: Navigate through search results
+
+###  Health Page
+- **API Status**: Real-time backend health monitoring
+- **Test Interface**: Echo functionality for API testing
+- **Service Indicators**: Visual status indicators
+
+### Navigation
+- **Responsive Menu**: Clean navigation with active page indicators
+- **Mobile-Friendly**: Collapsible menu for mobile devices
+- **Breadcrumbs**: Clear navigation hierarchy
+
+## Usage Examples
+
+### Adding a New Place
+1. Navigate to the Places page
+2. Click "Add Place" button
+3. Fill in the required information (name is required)
+4. Select categories if applicable
+5. Add contact information and location details
+6. Click "Add Place" to save
+
+### Searching Places
+1. Use the search form to filter by:
+   - Name (partial match)
+   - City and state
+   - Status (active/inactive)
+   - Categories (multiple selection)
+2. Results update in real-time
+3. Use pagination to browse through results
+
+### Managing Categories
+- Categories are displayed as colored badges on place cards
+- Use category checkboxes in search to filter results
+- Category assignment is available in the add/edit place forms
 
 ## Backend (Spring Boot)
 Run with Docker Compose (recommended), or locally without DB using the `local` profile:
@@ -95,6 +201,13 @@ Key indexes:
 - `PUT /api/places/{id}` - Update place
 - `DELETE /api/places/{id}` - Delete place
 - `POST /api/places/search` - Search places with filters and pagination
+
+### Categories (Ready for Implementation)
+- `GET /api/categories` - List all categories
+- `GET /api/categories/{id}` - Get category by ID
+- `POST /api/categories` - Create new category
+- `PUT /api/categories/{id}` - Update category
+- `DELETE /api/categories/{id}` - Delete category
 
 ### Search API
 The search endpoint supports filtering by city, state, name, status, and categories with pagination:
@@ -165,10 +278,19 @@ curl -X POST http://localhost:8080/api/places/search \
 ```
 
 ## Roadmap (MVP → hardening)
-1) Place CRUD + search (city/state/name/text), pagination
-2) Categories + place-category relationships
-3) Pre-signed S3 uploads for images (LocalStack in dev)
-4) Submissions + moderation flow
-5) Deploy to AWS (ECS+ALB, RDS, S3+CloudFront)
-6) Perf tests, alerts, and security hardening
+1) ✅ **Place CRUD + search** (city/state/name/text), pagination
+2) ✅ **Frontend UI/UX** - Modern design with Tailwind CSS, component library, responsive layout
+3) ✅ **Categories Support** - Frontend ready for category filtering and assignment
+4) 🔄 **Categories Backend** - Implement category CRUD endpoints and place-category relationships
+5) **Pre-signed S3 uploads** for images (LocalStack in dev)
+6) **Submissions + moderation flow**
+7) **Deploy to AWS** (ECS+ALB, RDS, S3+CloudFront)
+8) **Perf tests, alerts, and security hardening**
+
+## Current Status
+- ✅ **Backend**: Full Place CRUD API with search, pagination, and filtering
+- ✅ **Frontend**: Professional UI with search, forms, and category support
+- ✅ **Database**: PostgreSQL with Flyway migrations
+- ✅ **Development**: Docker Compose setup for local development
+- 🔄 **Next**: Implement category backend endpoints and relationships
 
