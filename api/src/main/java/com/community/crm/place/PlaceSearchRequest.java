@@ -1,5 +1,6 @@
 package com.community.crm.place;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,6 +14,11 @@ public class PlaceSearchRequest {
     private int size = 20;
     private String sortBy = "name";
     private String sortDirection = "asc";
+    
+    
+    private BigDecimal latitude;
+    private BigDecimal longitude;
+    private Double radiusMiles;
 
     public PlaceSearchRequest() {}
 
@@ -35,4 +41,12 @@ public class PlaceSearchRequest {
     public void setSortBy(String sortBy) { this.sortBy = sortBy; }
     public String getSortDirection() { return sortDirection; }
     public void setSortDirection(String sortDirection) { this.sortDirection = sortDirection; }
+    
+    // Location-based search getters and setters
+    public BigDecimal getLatitude() { return latitude; }
+    public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
+    public BigDecimal getLongitude() { return longitude; }
+    public void setLongitude(BigDecimal longitude) { this.longitude = longitude; }
+    public Double getRadiusMiles() { return radiusMiles; }
+    public void setRadiusMiles(Double radiusMiles) { this.radiusMiles = radiusMiles; }
 }

@@ -40,6 +40,11 @@ public class PlaceController {
     public PlaceSearchResponse search(@RequestBody PlaceSearchRequest request) {
         return service.search(request);
     }
+    
+    @PostMapping("/search/location")
+    public PlaceSearchResponse searchByLocation(@RequestBody PlaceSearchRequest request) {
+        return service.search(request);
+    }
 }
 
 

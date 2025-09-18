@@ -33,7 +33,6 @@ public class PlaceService {
             p.setId(UUID.randomUUID());
         }
         
-        // Handle category relationships
         if (p.getCategories() != null) {
             List<Category> managedCategories = p.getCategories().stream()
                 .map(category -> categoryRepository.findById(category.getId())
@@ -48,8 +47,7 @@ public class PlaceService {
     public Place update(UUID id, Place p) {
         Place existing = get(id);
         p.setId(existing.getId());
-        
-        // Handle category relationships
+    
         if (p.getCategories() != null) {
             List<Category> managedCategories = p.getCategories().stream()
                 .map(category -> categoryRepository.findById(category.getId())
@@ -66,35 +64,56 @@ public class PlaceService {
     public PlaceSearchResponse search(PlaceSearchRequest request) {
         Pageable pageable = createPageable(request);
         Page<Place> page;
-        
-        // Create LIKE patterns
-        String cityPattern = request.getCity() != null ? "%" + request.getCity().toLowerCase() + "%" : null;
-        String statePattern = request.getState() != null ? "%" + request.getState().toLowerCase() + "%" : null;
-        String namePattern = request.getName() != null ? "%" + request.getName().toLowerCase() + "%" : null;
-        
-        if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
-            page = repository.findByFiltersWithCategories(
-                request.getCity(),
-                request.getState(), 
-                request.getName(),
-                request.getStatus(),
-                request.getCategoryIds(),
-                cityPattern,
-                statePattern,
-                namePattern,
-                pageable
-            );
+    
+        if (request.getLatitude() != null && request.getLongitude() != null && request.getRadiusMiles() != null) {
+            double radiusKm = request.getRadiusMiles() * 1.60934;
+            
+            if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+                page = repository.findByLocationWithCategories(
+                    request.getLatitude().doubleValue(),
+                    request.getLongitude().doubleValue(),
+                    radiusKm,
+                    request.getCategoryIds(),
+                    pageable
+                );
+            } else {
+                page = repository.findByLocation(
+                    request.getLatitude().doubleValue(),
+                    request.getLongitude().doubleValue(),
+                    radiusKm,
+                    pageable
+                );
+            }
         } else {
-            page = repository.findByFilters(
-                request.getCity(),
-                request.getState(),
-                request.getName(), 
-                request.getStatus(),
-                cityPattern,
-                statePattern,
-                namePattern,
-                pageable
-            );
+            // Regular search
+            String cityPattern = request.getCity() != null ? "%" + request.getCity().toLowerCase() + "%" : null;
+            String statePattern = request.getState() != null ? "%" + request.getState().toLowerCase() + "%" : null;
+            String namePattern = request.getName() != null ? "%" + request.getName().toLowerCase() + "%" : null;
+            
+            if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+                page = repository.findByFiltersWithCategories(
+                    request.getCity(),
+                    request.getState(), 
+                    request.getName(),
+                    request.getStatus(),
+                    request.getCategoryIds(),
+                    cityPattern,
+                    statePattern,
+                    namePattern,
+                    pageable
+                );
+            } else {
+                page = repository.findByFilters(
+                    request.getCity(),
+                    request.getState(),
+                    request.getName(), 
+                    request.getStatus(),
+                    cityPattern,
+                    statePattern,
+                    namePattern,
+                    pageable
+                );
+            }
         }
         
         return new PlaceSearchResponse(

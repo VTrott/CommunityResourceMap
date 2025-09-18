@@ -1,0 +1,184 @@
+import { useState } from 'react';
+import { geocodeAddress, RADIUS_OPTIONS, type GeocodingResult } from '../services/geocoding';
+import { useCategories } from '../hooks/useCategories';
+import type { LocationSearchRequest } from '../types';
+import Button from './ui/Button';
+
+interface LocationSearchProps {
+  onSearch: (searchRequest: LocationSearchRequest) => void;
+  loading?: boolean;
+  onClear?: () => void;
+}
+
+export default function LocationSearch({ onSearch, loading = false, onClear }: LocationSearchProps) {
+  const [address, setAddress] = useState('');
+  const [radiusMiles, setRadiusMiles] = useState(15);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [geocodingError, setGeocodingError] = useState<string | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geocodedLocation, setGeocodedLocation] = useState<GeocodingResult | null>(null);
+
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  const handleGeocode = async () => {
+    if (!address.trim()) {
+      setGeocodingError('Please enter an address');
+      return;
+    }
+
+    setIsGeocoding(true);
+    setGeocodingError(null);
+    setGeocodedLocation(null);
+
+    try {
+      const result = await geocodeAddress(address);
+      setGeocodedLocation(result);
+    } catch (error) {
+      setGeocodingError(error instanceof Error ? error.message : 'Failed to geocode address');
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  const handleSearch = () => {
+    if (!geocodedLocation) {
+      setGeocodingError('Please geocode an address first');
+      return;
+    }
+
+    onSearch({
+      address,
+      radiusMiles,
+      categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+    });
+  };
+
+  const handleClear = () => {
+    setAddress('');
+    setRadiusMiles(15);
+    setSelectedCategoryIds([]);
+    setGeocodingError(null);
+    setGeocodedLocation(null);
+    onClear?.();
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategoryIds(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Address Input */}
+      <div>
+        <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+          Enter your address
+        </label>
+        <div className="flex gap-2">
+          <input
+            id="address"
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="e.g., 123 Main St, City, State"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            disabled={loading || isGeocoding}
+          />
+          <Button
+            onClick={handleGeocode}
+            loading={isGeocoding}
+            disabled={!address.trim() || loading}
+            variant="secondary"
+          >
+            Find Location
+          </Button>
+        </div>
+        {geocodingError && (
+          <p className="mt-1 text-sm text-red-600">{geocodingError}</p>
+        )}
+        {geocodedLocation && (
+          <p className="mt-1 text-sm text-green-600">
+            ✓ Found: {geocodedLocation.formattedAddress}
+          </p>
+        )}
+      </div>
+
+      {/* Radius Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Search radius
+        </label>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {RADIUS_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setRadiusMiles(option.value)}
+              className={`px-3 py-2 text-sm font-medium rounded-md border transition-colors ${
+                radiusMiles === option.value
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+              disabled={loading}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Category Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Filter by category (optional)
+        </label>
+        {categoriesLoading ? (
+          <p className="text-sm text-gray-500">Loading categories...</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => toggleCategory(category.id)}
+                className={`px-3 py-1 text-sm font-medium rounded-full border transition-colors ${
+                  selectedCategoryIds.includes(category.id)
+                    ? 'bg-blue-100 text-blue-800 border-blue-300'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+                disabled={loading}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        )}
+        {selectedCategoryIds.length > 0 && (
+          <p className="mt-1 text-sm text-gray-500">
+            {selectedCategoryIds.length} categor{selectedCategoryIds.length === 1 ? 'y' : 'ies'} selected
+          </p>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2 pt-4">
+        <Button
+          onClick={handleSearch}
+          loading={loading}
+          disabled={!geocodedLocation}
+          className="flex-1"
+        >
+          Search Nearby Places
+        </Button>
+        <Button
+          onClick={handleClear}
+          variant="secondary"
+          disabled={loading}
+        >
+          Clear
+        </Button>
+      </div>
+    </div>
+  );
+}

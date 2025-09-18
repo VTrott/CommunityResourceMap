@@ -12,8 +12,9 @@ A web application that helps people discover and access community resources in t
 
 **For Community Members:**
 - **Interactive Map**: Browse resources by location with visual markers
+- **Location-Based Search**: Enter your address to find resources within 10-50 miles
 - **Smart Search**: Find resources by name, category, or keywords
-- **Location-Based**: Filter by distance, neighborhood, or city
+- **Category Filtering**: Filter by resource type with color-coded map markers
 - **Mobile-Friendly**: Access from any device
 - **Real-Time Info**: Up-to-date hours, contact info, and availability
 - **Places Import**: Import verified community resources from OpenStreetMap
@@ -42,7 +43,7 @@ A web application that helps people discover and access community resources in t
 - **Frontend**: React + TypeScript (Vite), React Router, TanStack Query, React Hook Form, Zod, Tailwind CSS
 - **Backend**: Spring Boot 3 (Java 21), JPA/Hibernate, Flyway, Actuator
 - **Database**: PostgreSQL 16
-- **External APIs**: OpenStreetMap Nominatim (places data)
+- **External APIs**: OpenStreetMap Nominatim (places data), Google Maps (geocoding & maps)
 - **Local Dev**: Docker Compose
 - **UI Framework**: Tailwind CSS with custom component library
 
@@ -74,6 +75,8 @@ npm run dev
 - **Component Library**: Reusable UI components (Button, Input, Card, etc.)
 - **Form Validation**: Client-side validation with Zod and React Hook Form
 - **Real-time Search**: Live search with filters and pagination
+- **Location-Based Search**: Find resources near your address with radius controls
+- **Interactive Maps**: Google Maps integration with color-coded category markers
 - **Category Support**: Filter and assign categories to places
 - **Places Import**: Import verified community resources from OpenStreetMap
 - **Type Safety**: Full TypeScript integration throughout
@@ -103,6 +106,8 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 
 ### Advanced Search & Filtering
 - **Multi-criteria Search**: Filter by name, city, state, status, and categories
+- **Location-Based Search**: Enter your address to find resources within 10-50 miles
+- **Interactive Maps**: Visual map with color-coded markers by category
 - **Real-time Results**: Instant search with pagination
 - **Category Filtering**: Select multiple categories to narrow results
 - **Sort Options**: Sort by name, date, or other fields
@@ -135,6 +140,14 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 - Navigation to main features
 - Clean, professional landing page
 
+### Find Resources Page
+- **Address Input**: Enter your address to find nearby resources
+- **Radius Selection**: Choose search radius (10, 15, 25, or 50 miles)
+- **Category Filtering**: Filter by resource type with visual indicators
+- **Interactive Map**: Google Maps with color-coded markers by category
+- **List View**: Traditional list view as alternative to map
+- **Real-time Search**: Instant results as you type and filter
+
 ### Places Page
 - **Search Interface**: Multi-criteria search form with filters
 - **Results Display**: Card-based layout showing place details
@@ -154,6 +167,15 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 - **Breadcrumbs**: Clear navigation hierarchy
 
 ## Usage Examples
+
+### Finding Resources Near You 
+1. Navigate to the "Find Resources" page
+2. Enter your address (e.g., "123 Main St, City, State")
+3. Click "Find Location" to geocode your address
+4. Select your search radius (10, 15, 25, or 50 miles)
+5. Optionally filter by categories (Food Assistance, Healthcare, etc.)
+6. Click "Search Nearby Places" to find resources
+7. Switch between Map View and List View to explore results
 
 ### Adding a New Place
 1. Navigate to the Places page
@@ -227,6 +249,7 @@ Key indexes:
 - `PUT /api/places/{id}` - Update place
 - `DELETE /api/places/{id}` - Delete place
 - `POST /api/places/search` - Search places with filters and pagination
+- `POST /api/places/search/location` - Location-based search with radius
 
 ### Categories
 - `GET /api/categories` - List all categories
@@ -262,6 +285,9 @@ curl -X POST http://localhost:8080/api/places/search \
 - `name` (string): Filter by place name (partial match, case-insensitive)
 - `status` (string): Filter by status (exact match, default: "active")
 - `categoryIds` (array): Filter by category IDs
+- `latitude` (number): Center latitude for location-based search
+- `longitude` (number): Center longitude for location-based search
+- `radiusMiles` (number): Search radius in miles for location-based search
 - `page` (number): Page number (default: 0)
 - `size` (number): Page size (default: 20)
 - `sortBy` (string): Sort field (default: "name")
@@ -341,16 +367,18 @@ curl -X POST http://localhost:8080/api/places/search \
 3) ✅ **Categories Support** - Frontend ready for category filtering and assignment
 4) ✅ **Categories Backend** - Full category CRUD endpoints and place-category relationships
 5) ✅ **Places Import** - OpenStreetMap integration for importing verified community resources
-6) **Pre-signed S3 uploads** for images (LocalStack in dev)
-7) **Submissions + moderation flow**
-8) **Deploy to AWS** (ECS+ALB, RDS, S3+CloudFront)
-9) **Perf tests, alerts, and security hardening**
+6) ✅ **Location-Based Search** - Address geocoding, radius search, interactive maps
+7) **Pre-signed S3 uploads** for images (LocalStack in dev)
+8) **Submissions + moderation flow**
+9) **Deploy to AWS** (ECS+ALB, RDS, S3+CloudFront)
+10) **Perf tests, alerts, and security hardening**
 
 ## Current Status
 - ✅ **Backend**: Full Place CRUD API with search, pagination, and filtering
 - ✅ **Frontend**: Professional UI with search, forms, and category support
 - ✅ **Categories**: Complete backend implementation with 10 sample categories
 - ✅ **Places Import**: OpenStreetMap integration for importing verified community resources
+- ✅ **Location Search**: Address geocoding, radius-based search, interactive maps
 - ✅ **Database**: PostgreSQL with Flyway migrations
 - ✅ **Development**: Docker Compose setup for local development
 - 🔄 **Next**: Image uploads and submission workflow

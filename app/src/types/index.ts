@@ -40,6 +40,15 @@ export type PlaceSearchRequest = {
   size?: number;
   sortBy?: string;
   sortDirection?: string;
+  latitude?: number;
+  longitude?: number;
+  radiusMiles?: number;
+};
+
+export type LocationSearchRequest = {
+  address: string;
+  radiusMiles: number;
+  categoryIds?: string[];
 };
 
 export type PlaceSearchResponse = {

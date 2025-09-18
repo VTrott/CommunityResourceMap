@@ -40,6 +40,31 @@ public interface PlaceRepository extends JpaRepository<Place, UUID> {
                                            @Param("statePattern") String statePattern,
                                            @Param("namePattern") String namePattern,
                                            Pageable pageable);
+    
+    @Query("SELECT p FROM Place p WHERE " +
+           "p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND " +
+           "p.status = 'active' AND " +
+           "6371 * acos(cos(radians(:lat)) * cos(radians(p.latitude)) * " +
+           "cos(radians(p.longitude) - radians(:lng)) + " +
+           "sin(radians(:lat)) * sin(radians(p.latitude))) <= :radiusKm")
+    Page<Place> findByLocation(@Param("lat") Double latitude, 
+                               @Param("lng") Double longitude, 
+                               @Param("radiusKm") Double radiusKm, 
+                               Pageable pageable);
+    
+    @Query("SELECT DISTINCT p FROM Place p " +
+           "JOIN p.categories c " +
+           "WHERE c.id IN :categoryIds AND " +
+           "p.latitude IS NOT NULL AND p.longitude IS NOT NULL AND " +
+           "p.status = 'active' AND " +
+           "6371 * acos(cos(radians(:lat)) * cos(radians(p.latitude)) * " +
+           "cos(radians(p.longitude) - radians(:lng)) + " +
+           "sin(radians(:lat)) * sin(radians(p.latitude))) <= :radiusKm")
+    Page<Place> findByLocationWithCategories(@Param("lat") Double latitude, 
+                                            @Param("lng") Double longitude, 
+                                            @Param("radiusKm") Double radiusKm,
+                                            @Param("categoryIds") List<UUID> categoryIds,
+                                            Pageable pageable);
 }
 
 

@@ -1,13 +1,15 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import HealthPage from './pages/Health';
 import PlacesPage from './pages/Places';
+import LocationSearchPage from './pages/LocationSearchPage';
 
 export default function App() {
   const location = useLocation();
   
   const navItems = [
-    { path: '/', label: 'Map' },
-    { path: '/places', label: 'Places' },
+    { path: '/', label: 'Home' },
+    { path: '/search', label: 'Find Resources' },
+    { path: '/places', label: 'Browse All' },
     { path: '/submit', label: 'Submit' },
     { path: '/admin', label: 'Admin' },
     { path: '/health', label: 'Health' },
@@ -49,15 +51,24 @@ export default function App() {
               <div className="text-center">
                 <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to Community Resource Map</h1>
                 <p className="text-xl text-gray-600 mb-8">Find and share community resources in your area</p>
-                <Link 
-                  to="/places" 
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Browse Places
-                </Link>
+                <div className="space-x-4">
+                  <Link 
+                    to="/search" 
+                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Find Resources Near Me
+                  </Link>
+                  <Link 
+                    to="/places" 
+                    className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Browse All Places
+                  </Link>
+                </div>
               </div>
             </div>
           } />
+          <Route path="/search" element={<LocationSearchPage />} />
           <Route path="/places" element={<PlacesPage />} />
           <Route path="/submit" element={
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">

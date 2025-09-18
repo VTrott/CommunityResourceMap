@@ -5,7 +5,8 @@ import type {
   PlaceSearchRequest, 
   PlaceSearchResponse, 
   CreatePlaceRequest, 
-  UpdatePlaceRequest 
+  UpdatePlaceRequest,
+  LocationSearchRequest
 } from '../types';
 
 const baseUrl = import.meta.env.VITE_API_URL || '';
@@ -23,10 +24,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // Health
   getHealth: () => request<HealthResponse>('/api/health'),
   
-  // Places CRUD
   getPlaces: () => request<Place[]>('/api/places'),
   getPlace: (id: string) => request<Place>(`/api/places/${id}`),
   createPlace: (place: CreatePlaceRequest) => 
@@ -44,14 +43,18 @@ export const api = {
       method: 'DELETE',
     }),
   
-  // Search
   searchPlaces: (searchRequest: PlaceSearchRequest) =>
     request<PlaceSearchResponse>('/api/places/search', {
       method: 'POST',
       body: JSON.stringify(searchRequest),
     }),
 
-  // Categories
+  searchPlacesByLocation: (locationRequest: LocationSearchRequest) =>
+    request<PlaceSearchResponse>('/api/places/search/location', {
+      method: 'POST',
+      body: JSON.stringify(locationRequest),
+    }),
+
   getCategories: () => request<Category[]>('/api/categories'),
   createCategory: (category: Omit<Category, 'id'>) =>
     request<Category>('/api/categories', {
