@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { PlaceSearchRequest, CreatePlaceRequest } from '../types';
+import type { PlaceSearchRequest, CreatePlaceRequest } from '../types';
 import { usePlaces, useCreatePlace, useDeletePlace } from '../hooks/usePlaces';
 import SearchForm from '../components/forms/SearchForm';
 import PlaceForm from '../components/forms/PlaceForm';
+import ImportPlaces from '../components/ImportPlaces';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
@@ -14,6 +15,7 @@ export default function PlacesPage() {
     sortDirection: 'asc',
   });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showImportPlaces, setShowImportPlaces] = useState(false);
 
   // Search places
   const { data: searchResponse, isLoading, error } = usePlaces(searchParams);
@@ -54,12 +56,20 @@ export default function PlacesPage() {
         <Card className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Search Places</h2>
-            <Button 
-              onClick={() => setShowAddForm(!showAddForm)}
-              variant={showAddForm ? 'secondary' : 'primary'}
-            >
-              {showAddForm ? 'Cancel Add' : 'Add Place'}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowImportPlaces(true)}
+                variant="secondary"
+              >
+                Import from Map
+              </Button>
+              <Button 
+                onClick={() => setShowAddForm(!showAddForm)}
+                variant={showAddForm ? 'secondary' : 'primary'}
+              >
+                {showAddForm ? 'Cancel Add' : 'Add Place'}
+              </Button>
+            </div>
           </div>
           <SearchForm
             onSubmit={onSearch}
@@ -213,6 +223,11 @@ export default function PlacesPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Import Places Modal */}
+        {showImportPlaces && (
+          <ImportPlaces onClose={() => setShowImportPlaces(false)} />
         )}
       </div>
     </div>

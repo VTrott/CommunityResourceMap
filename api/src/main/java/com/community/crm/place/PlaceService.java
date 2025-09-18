@@ -1,16 +1,24 @@
 package com.community.crm.place;
 
+import com.community.crm.category.Category;
+import com.community.crm.category.CategoryRepository;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class PlaceService {
     private final PlaceRepository repository;
+    
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     public PlaceService(PlaceRepository repository) {
         this.repository = repository;
@@ -24,12 +32,32 @@ public class PlaceService {
         if (p.getId() == null) {
             p.setId(UUID.randomUUID());
         }
+        
+        // Handle category relationships
+        if (p.getCategories() != null) {
+            List<Category> managedCategories = p.getCategories().stream()
+                .map(category -> categoryRepository.findById(category.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found: " + category.getId())))
+                .toList();
+            p.setCategories(managedCategories);
+        }
+        
         return repository.save(p);
     }
 
     public Place update(UUID id, Place p) {
         Place existing = get(id);
         p.setId(existing.getId());
+        
+        // Handle category relationships
+        if (p.getCategories() != null) {
+            List<Category> managedCategories = p.getCategories().stream()
+                .map(category -> categoryRepository.findById(category.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found: " + category.getId())))
+                .toList();
+            p.setCategories(managedCategories);
+        }
+        
         return repository.save(p);
     }
 

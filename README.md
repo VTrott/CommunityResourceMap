@@ -16,6 +16,7 @@ A web application that helps people discover and access community resources in t
 - **Location-Based**: Filter by distance, neighborhood, or city
 - **Mobile-Friendly**: Access from any device
 - **Real-Time Info**: Up-to-date hours, contact info, and availability
+- **Places Import**: Import verified community resources from OpenStreetMap
 
 **For Organizations:**
 - **Easy Submission**: Add new resources or update existing ones
@@ -26,6 +27,7 @@ A web application that helps people discover and access community resources in t
 - **Moderation Queue**: Review and approve community submissions
 - **Usage Insights**: Monitor popular resources and search patterns
 - **Quality Control**: Maintain data accuracy and prevent spam
+- **Bulk Import**: Import verified places from OpenStreetMap with one click
 
 ### Resource Categories
 - **Food Assistance** (food banks, meal programs, SNAP enrollment)
@@ -40,6 +42,7 @@ A web application that helps people discover and access community resources in t
 - **Frontend**: React + TypeScript (Vite), React Router, TanStack Query, React Hook Form, Zod, Tailwind CSS
 - **Backend**: Spring Boot 3 (Java 21), JPA/Hibernate, Flyway, Actuator
 - **Database**: PostgreSQL 16
+- **External APIs**: OpenStreetMap Nominatim (places data)
 - **Local Dev**: Docker Compose
 - **UI Framework**: Tailwind CSS with custom component library
 
@@ -72,6 +75,7 @@ npm run dev
 - **Form Validation**: Client-side validation with Zod and React Hook Form
 - **Real-time Search**: Live search with filters and pagination
 - **Category Support**: Filter and assign categories to places
+- **Places Import**: Import verified community resources from OpenStreetMap
 - **Type Safety**: Full TypeScript integration throughout
 
 **File Structure:**
@@ -110,6 +114,7 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 - **Delete Places**: Safe deletion with confirmation
 - **Category Assignment**: Assign multiple categories to places
 - **Status Management**: Mark places as active or inactive
+- **Places Import**: Import verified places from OpenStreetMap with one click
 
 ### Category System
 - **Category Selection**: Multi-select category picker in forms
@@ -136,6 +141,7 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 - **Add Place Form**: Comprehensive form for adding new places
 - **Category Management**: Visual category assignment and filtering
 - **Pagination**: Navigate through search results
+- **Places Import**: Import verified community resources from OpenStreetMap
 
 ###  Health Page
 - **API Status**: Real-time backend health monitoring
@@ -157,6 +163,15 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 5. Add contact information and location details
 6. Click "Add Place" to save
 
+### Importing Places from OpenStreetMap
+1. Navigate to the Places page
+2. Click "Import from Map" button
+3. Enter city and state (e.g., "Seattle", "WA")
+4. Select resource type (e.g., "Food Banks", "Healthcare")
+5. Click "Search for [resource type]"
+6. Select places you want to import
+7. Click "Import Selected" to add them to your database
+
 ### Searching Places
 1. Use the search form to filter by:
    - Name (partial match)
@@ -167,9 +182,20 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 3. Use pagination to browse through results
 
 ### Managing Categories
-- Categories are displayed as colored badges on place cards
-- Use category checkboxes in search to filter results
-- Category assignment is available in the add/edit place forms
+- **10 Pre-loaded Categories**: Food Assistance, Healthcare, Housing, Legal Aid, Family Services, Employment, Education, Mental Health, Emergency Services, Community Centers
+- **Category Display**: Categories shown as colored badges on place cards
+- **Search Filtering**: Use category checkboxes in search to filter results
+- **Place Assignment**: Assign multiple categories to places during creation/editing
+- **Category Management**: Full CRUD operations for categories via API
+
+### Places Import from OpenStreetMap
+- **Free API Integration**: No API key required, uses OpenStreetMap Nominatim
+- **Resource Types**: Food banks, healthcare facilities, shelters, community centers, libraries
+- **Location Search**: Search by city and state to find local resources
+- **Bulk Selection**: Select multiple places to import at once
+- **Data Enrichment**: Automatically extracts phone numbers, websites, and addresses
+- **Category Mapping**: Maps OSM amenity types to your existing categories
+- **Rate Limiting**: Respects API guidelines with 1 request per second
 
 ## Backend (Spring Boot)
 Run with Docker Compose (recommended), or locally without DB using the `local` profile:
@@ -202,9 +228,10 @@ Key indexes:
 - `DELETE /api/places/{id}` - Delete place
 - `POST /api/places/search` - Search places with filters and pagination
 
-### Categories (Ready for Implementation)
+### Categories
 - `GET /api/categories` - List all categories
 - `GET /api/categories/{id}` - Get category by ID
+- `GET /api/categories/search?name=...` - Search categories by name
 - `POST /api/categories` - Create new category
 - `PUT /api/categories/{id}` - Update category
 - `DELETE /api/categories/{id}` - Delete category
@@ -234,7 +261,7 @@ curl -X POST http://localhost:8080/api/places/search \
 - `state` (string): Filter by state (partial match, case-insensitive)
 - `name` (string): Filter by place name (partial match, case-insensitive)
 - `status` (string): Filter by status (exact match, default: "active")
-- `categoryIds` (array): Filter by category IDs (when categories are implemented)
+- `categoryIds` (array): Filter by category IDs
 - `page` (number): Page number (default: 0)
 - `size` (number): Page size (default: 20)
 - `sortBy` (string): Sort field (default: "name")
@@ -256,6 +283,29 @@ curl -X POST http://localhost:8080/api/places/search \
 ### Health
 - `GET /api/health` - API health check
 
+## Category API Examples
+
+```bash
+# Get all categories
+curl http://localhost:8080/api/categories
+
+# Search categories by name
+curl "http://localhost:8080/api/categories/search?name=health"
+
+# Create a new category
+curl -X POST http://localhost:8080/api/categories \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Transportation", "slug":"transportation"}'
+
+# Update a category
+curl -X PUT http://localhost:8080/api/categories/{id} \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Updated Name", "slug":"updated-slug"}'
+
+# Delete a category
+curl -X DELETE http://localhost:8080/api/categories/{id}
+```
+
 ## Common commands
 ```bash
 # start/stop
@@ -275,22 +325,33 @@ docker exec -it crm-postgres psql -U crm -d crm
 curl -X POST http://localhost:8080/api/places/search \
   -H 'Content-Type: application/json' \
   -d '{"city":"Seattle"}'
+
+# test categories API
+curl http://localhost:8080/api/categories
+
+# test category search
+curl -X POST http://localhost:8080/api/places/search \
+  -H 'Content-Type: application/json' \
+  -d '{"categoryIds":["1db71ea9-4386-4087-96ba-bf0996136ebb"]}'
 ```
 
 ## Roadmap (MVP → hardening)
 1) ✅ **Place CRUD + search** (city/state/name/text), pagination
 2) ✅ **Frontend UI/UX** - Modern design with Tailwind CSS, component library, responsive layout
 3) ✅ **Categories Support** - Frontend ready for category filtering and assignment
-4) 🔄 **Categories Backend** - Implement category CRUD endpoints and place-category relationships
-5) **Pre-signed S3 uploads** for images (LocalStack in dev)
-6) **Submissions + moderation flow**
-7) **Deploy to AWS** (ECS+ALB, RDS, S3+CloudFront)
-8) **Perf tests, alerts, and security hardening**
+4) ✅ **Categories Backend** - Full category CRUD endpoints and place-category relationships
+5) ✅ **Places Import** - OpenStreetMap integration for importing verified community resources
+6) **Pre-signed S3 uploads** for images (LocalStack in dev)
+7) **Submissions + moderation flow**
+8) **Deploy to AWS** (ECS+ALB, RDS, S3+CloudFront)
+9) **Perf tests, alerts, and security hardening**
 
 ## Current Status
 - ✅ **Backend**: Full Place CRUD API with search, pagination, and filtering
 - ✅ **Frontend**: Professional UI with search, forms, and category support
+- ✅ **Categories**: Complete backend implementation with 10 sample categories
+- ✅ **Places Import**: OpenStreetMap integration for importing verified community resources
 - ✅ **Database**: PostgreSQL with Flyway migrations
 - ✅ **Development**: Docker Compose setup for local development
-- 🔄 **Next**: Implement category backend endpoints and relationships
+- 🔄 **Next**: Image uploads and submission workflow
 

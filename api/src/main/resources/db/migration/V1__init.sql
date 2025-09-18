@@ -59,5 +59,3 @@ drop trigger if exists trg_place_updated_at on place;
 create trigger trg_place_updated_at
 before update on place
 for each row execute function set_updated_at();
-
-
