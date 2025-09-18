@@ -86,6 +86,63 @@ MVP ERD:
 Key indexes:
 - name trigram search, (latitude, longitude) for map bounds, (city, state)
 
+## API Endpoints
+
+### Places
+- `GET /api/places` - List all places
+- `GET /api/places/{id}` - Get place by ID
+- `POST /api/places` - Create new place
+- `PUT /api/places/{id}` - Update place
+- `DELETE /api/places/{id}` - Delete place
+- `POST /api/places/search` - Search places with filters and pagination
+
+### Search API
+The search endpoint supports filtering by city, state, name, status, and categories with pagination:
+
+```bash
+# Search by city
+curl -X POST http://localhost:8080/api/places/search \
+  -H 'Content-Type: application/json' \
+  -d '{"city":"Seattle","page":0,"size":10}'
+
+# Search by name with pagination
+curl -X POST http://localhost:8080/api/places/search \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Clinic","page":0,"size":5,"sortBy":"name","sortDirection":"asc"}'
+
+# Get all active places
+curl -X POST http://localhost:8080/api/places/search \
+  -H 'Content-Type: application/json' \
+  -d '{"status":"active","page":0,"size":20}'
+```
+
+**Search Request Parameters:**
+- `city` (string): Filter by city (partial match, case-insensitive)
+- `state` (string): Filter by state (partial match, case-insensitive)
+- `name` (string): Filter by place name (partial match, case-insensitive)
+- `status` (string): Filter by status (exact match, default: "active")
+- `categoryIds` (array): Filter by category IDs (when categories are implemented)
+- `page` (number): Page number (default: 0)
+- `size` (number): Page size (default: 20)
+- `sortBy` (string): Sort field (default: "name")
+- `sortDirection` (string): Sort direction - "asc" or "desc" (default: "asc")
+
+**Search Response:**
+```json
+{
+  "content": [...places...],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+### Health
+- `GET /api/health` - API health check
+
 ## Common commands
 ```bash
 # start/stop
@@ -100,12 +157,18 @@ docker compose logs -f api
 
 # psql into db
 docker exec -it crm-postgres psql -U crm -d crm
+
+# test search API
+curl -X POST http://localhost:8080/api/places/search \
+  -H 'Content-Type: application/json' \
+  -d '{"city":"Seattle"}'
 ```
 
 ## Roadmap (MVP → hardening)
-1) Place CRUD + search (bbox/type/text), categories
-2) Pre-signed S3 uploads for images (LocalStack in dev)
-3) Submissions + moderation flow
-4) Deploy to AWS (ECS+ALB, RDS, S3+CloudFront)
-5) Perf tests, alerts, and security hardening
+1) Place CRUD + search (city/state/name/text), pagination
+2) Categories + place-category relationships
+3) Pre-signed S3 uploads for images (LocalStack in dev)
+4) Submissions + moderation flow
+5) Deploy to AWS (ECS+ALB, RDS, S3+CloudFront)
+6) Perf tests, alerts, and security hardening
 
