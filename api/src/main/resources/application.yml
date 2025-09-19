@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: community-resource-map-api
+  profiles:
+    active: local
   datasource:
     url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:crm}
     username: ${DB_USER:crm}

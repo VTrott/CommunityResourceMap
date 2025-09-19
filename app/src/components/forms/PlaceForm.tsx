@@ -2,15 +2,16 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Place, CreatePlaceRequest } from '../../types';
 import { useCategories } from '../../hooks/useCategories';
+import type { Place, CreatePlaceRequest } from '../../types';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Textarea from '../ui/Textarea';
 
-const placeSchema = z.object({
+const placeFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  status: z.string().default('active'),
   description: z.string().optional(),
   website: z.string().url().optional().or(z.literal('')),
   phone: z.string().optional(),
@@ -22,11 +23,10 @@ const placeSchema = z.object({
   postalCode: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  status: z.string().default('active'),
   categoryIds: z.array(z.string()).optional(),
 });
 
-type PlaceFormValues = z.infer<typeof placeSchema>;
+type PlaceFormValues = z.infer<typeof placeFormSchema>;
 
 interface PlaceFormProps {
   initialData?: Place;
@@ -44,7 +44,7 @@ const PlaceForm: React.FC<PlaceFormProps> = ({
   const { data: categories = [] } = useCategories();
   
   const form = useForm<PlaceFormValues>({
-    resolver: zodResolver(placeSchema),
+    resolver: zodResolver(placeFormSchema) as any,
     defaultValues: {
       name: initialData?.name || '',
       description: initialData?.description || '',
@@ -58,12 +58,12 @@ const PlaceForm: React.FC<PlaceFormProps> = ({
       postalCode: initialData?.postalCode || '',
       latitude: initialData?.latitude || undefined,
       longitude: initialData?.longitude || undefined,
-      status: initialData?.status || 'active',
+      status: (initialData?.status as 'active' | 'inactive') || 'active',
       categoryIds: initialData?.categories?.map(c => c.id) || [],
     },
   });
 
-  const handleSubmit = (values: PlaceFormValues) => {
+  const handleSubmit = (values: any) => {
     const cleanValues = {
       ...values,
       website: values.website || undefined,

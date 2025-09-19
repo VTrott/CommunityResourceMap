@@ -10,7 +10,7 @@ interface PrintViewProps {
   radiusMiles?: number;
 }
 
-export default function PrintView(_props: PrintViewProps) {
+export default function PrintView() {
   const handlePrint = () => {
     window.print();
   };

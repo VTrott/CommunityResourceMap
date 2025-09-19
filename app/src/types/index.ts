@@ -50,6 +50,8 @@ export type LocationSearchRequest = {
   address: string;
   radiusMiles: number;
   categoryIds?: string[];
+  city?: string;
+  state?: string;
 };
 
 export type PlaceSearchResponse = {

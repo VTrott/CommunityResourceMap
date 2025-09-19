@@ -17,7 +17,7 @@ const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
 let lastRequestTime = 0;
 const RATE_LIMIT_MS = 1000;
 
-async function rateLimitedRequest(url: string): Promise<any> {
+async function rateLimitedRequest(url: string): Promise<unknown> {
   const now = Date.now();
   const timeSinceLastRequest = now - lastRequestTime;
   
@@ -56,7 +56,7 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
   const url = `${NOMINATIM_BASE_URL}?${searchParams.toString()}`;
   
   try {
-    const results = await rateLimitedRequest(url);
+    const results = await rateLimitedRequest(url) as any[];
     
     if (!results || results.length === 0) {
       throw new Error('No results found for the provided address');

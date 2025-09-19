@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
-import type { PlaceSearchRequest, CreatePlaceRequest, UpdatePlaceRequest } from '../types';
+import type { PlaceSearchRequest, UpdatePlaceRequest } from '../types';
 
 export const usePlaces = (searchParams: PlaceSearchRequest) => {
   return useQuery({

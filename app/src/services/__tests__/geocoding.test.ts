@@ -28,7 +28,7 @@ describe('geocoding service', () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockResponse),
-      });
+      } as Response);
 
       const result = await geocodeAddress('New York, NY');
 
@@ -63,7 +63,7 @@ describe('geocoding service', () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve([]),
-      });
+      } as Response);
 
       await expect(geocodeAddress('Non-existent Place')).rejects.toThrow(
         'No results found for the provided address'

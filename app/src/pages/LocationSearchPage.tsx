@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useLocationSearch } from '../hooks/useLocationSearch';
 import { useKeyboardShortcuts, APP_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
-import { geocodeAddress, calculateDistance } from '../services/geocoding';
+import { calculateDistance } from '../services/geocoding';
+import { geocodeAddress } from '../services/googleGeocoding';
+import { GOOGLE_MAPS_API_KEY } from '../config/maps';
 import type { LocationSearchRequest, Place } from '../types';
 import LocationSearch from '../components/LocationSearch';
 import PlacesMap from '../components/PlacesMap';
-import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { PlaceCardSkeleton, MapSkeleton, SearchFormSkeleton } from '../components/LoadingSkeleton';
 import { PrintLayout } from '../components/PrintView';
@@ -13,6 +14,7 @@ import { PrintLayout } from '../components/PrintView';
 export default function LocationSearchPage() {
   const [locationRequest, setLocationRequest] = useState<LocationSearchRequest | null>(null);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [searchCenter, setSearchCenter] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
@@ -45,22 +47,49 @@ export default function LocationSearchPage() {
 
   const handleSearch = async (searchRequest: LocationSearchRequest) => {
     try {
-      const geocodedLocation = await geocodeAddress(searchRequest.address);
-      setUserLocation({
-        latitude: geocodedLocation.latitude,
-        longitude: geocodedLocation.longitude,
-      });
+      // Geocode the address to get coordinates
+      const geocodingResult = await geocodeAddress(searchRequest.address, GOOGLE_MAPS_API_KEY);
       
-      setLocationRequest(searchRequest);
+      if (geocodingResult) {
+        // Set the search center for the map
+        setSearchCenter({
+          latitude: geocodingResult.latitude,
+          longitude: geocodingResult.longitude
+        });
+        
+        // Extract city and state from geocoding result or address
+        const city = geocodingResult.city || searchRequest.address.split(',')[0]?.trim() || '';
+        const state = geocodingResult.state || searchRequest.address.split(',')[1]?.trim() || '';
+        
+        // Set the location request for the hook
+        setLocationRequest({
+          ...searchRequest,
+          city,
+          state,
+        });
+      } else {
+        // Fallback to simple city/state search if geocoding fails
+        const addressParts = searchRequest.address.split(',').map(part => part.trim());
+        const city = addressParts[0] || '';
+        const state = addressParts[1] || '';
+        
+        setLocationRequest({
+          ...searchRequest,
+          city,
+          state,
+        });
+      }
+      
       setSelectedPlace(null);
     } catch (error) {
-      console.error('Error geocoding address:', error);
+      console.error('Error processing search:', error);
     }
   };
 
   const handleClear = () => {
     setLocationRequest(null);
     setUserLocation(null);
+    setSearchCenter(null);
     setSelectedPlace(null);
   };
 
@@ -81,15 +110,20 @@ export default function LocationSearchPage() {
   const places = placesWithDistances;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Find Resources Near You</h1>
-          <p className="mt-2 text-gray-600">Enter your address to find community resources within your chosen radius</p>
+    <div style={{ minHeight: '100vh' }}>
+      <div className="container section-padding">
+        {/* Hero Section */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gradient mb-4">
+            Find Resources Near You
+          </h1>
+          <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
+            Discover community resources within your area. Enter your address to get started.
+          </p>
         </div>
 
         {/* Search Form */}
-        <Card className="mb-6">
+        <div className="mb-8">
           {isLoading && !locationRequest ? (
             <SearchFormSkeleton />
           ) : (
@@ -99,9 +133,9 @@ export default function LocationSearchPage() {
               onClear={handleClear}
             />
           )}
-        </Card>
+        </div>
 
-        {/* Results */}
+        {/* Loading State */}
         {isLoading && locationRequest && (
           <div className="space-y-6">
             {viewMode === 'map' ? (
@@ -116,39 +150,54 @@ export default function LocationSearchPage() {
           </div>
         )}
 
+        {/* Error State */}
         {error && (
-          <Card className="border-red-200 bg-red-50">
+          <div className="card" style={{ 
+            border: '1px solid #fca5a5', 
+            background: '#fef2f2',
+            padding: '1.5rem'
+          }}>
             <div className="text-red-800">
-              <h3 className="font-semibold">Error searching places</h3>
-              <p className="mt-1">{(error as Error).message}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">⚠️</span>
+                <h3 className="font-semibold text-lg">Error searching places</h3>
+              </div>
+              <p className="text-red-700">{(error as Error).message}</p>
             </div>
-          </Card>
+          </div>
         )}
 
         {searchResponse && (
-          <div className="space-y-6">
-            {/* View Toggle */}
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Found {searchResponse.totalElements} places
-              </h2>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setViewMode('map')}
-                  variant={viewMode === 'map' ? 'primary' : 'secondary'}
-                  size="sm"
-                  data-action="toggle-view"
-                >
-                  Map View
-                </Button>
-                <Button
-                  onClick={() => setViewMode('list')}
-                  variant={viewMode === 'list' ? 'primary' : 'secondary'}
-                  size="sm"
-                  data-action="toggle-view"
-                >
-                  List View
-                </Button>
+          <div className="space-y-8">
+            {/* Results Header */}
+            <div className="card p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-neutral-900 mb-2">
+                    🎯 Found {searchResponse.totalElements} places
+                  </h2>
+                  <p className="text-neutral-600">
+                    {userLocation && `Searching within ${locationRequest?.radiusMiles || 15} miles of your location`}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setViewMode('map')}
+                    variant={viewMode === 'map' ? 'primary' : 'secondary'}
+                    size="sm"
+                    data-action="toggle-view"
+                  >
+                    🗺️ Map View
+                  </Button>
+                  <Button
+                    onClick={() => setViewMode('list')}
+                    variant={viewMode === 'list' ? 'primary' : 'secondary'}
+                    size="sm"
+                    data-action="toggle-view"
+                  >
+                    📋 List View
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -157,6 +206,7 @@ export default function LocationSearchPage() {
               <PlacesMap
                 places={places}
                 userLocation={userLocation || undefined}
+                searchCenter={searchCenter || undefined}
                 radiusMiles={locationRequest?.radiusMiles}
                 onPlaceClick={handlePlaceClick}
                 selectedPlace={selectedPlace}
@@ -165,111 +215,104 @@ export default function LocationSearchPage() {
 
             {/* List View */}
             {viewMode === 'list' && (
-              <div className="grid gap-4">
+              <div className="space-y-4">
                 {places.length === 0 ? (
-                  <Card className="text-center py-12">
-                    <div className="text-gray-500">
-                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      <h3 className="mt-2 text-sm font-medium text-gray-900">No places found</h3>
-                      <p className="mt-1 text-sm text-gray-500">Try adjusting your search radius or address.</p>
+                  <div className="card text-center py-16">
+                    <div className="text-neutral-500">
+                      <div className="text-6xl mb-4">🔍</div>
+                      <h3 className="text-xl font-semibold text-neutral-900 mb-2">No places found</h3>
+                      <p className="text-neutral-600">Try adjusting your search radius or address.</p>
                     </div>
-                  </Card>
+                  </div>
                 ) : (
                   places.map((place) => (
-                    <Card 
+                    <div 
                       key={place.id} 
-                      className={`hover:shadow-md transition-shadow cursor-pointer ${
-                        selectedPlace?.id === place.id ? 'ring-2 ring-blue-500' : ''
+                      className={`card cursor-pointer transition-all duration-200 ${
+                        selectedPlace?.id === place.id 
+                          ? 'ring-2 ring-primary-500 shadow-medium' 
+                          : 'hover:shadow-medium'
                       }`}
                       onClick={() => handlePlaceClick(place)}
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{place.name}</h3>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              place.status === 'active' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {place.status}
-                            </span>
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <h3 className="text-xl font-bold text-neutral-900">{place.name}</h3>
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                                place.status === 'active' 
+                                  ? 'bg-accent-100 text-accent-800' 
+                                  : 'bg-neutral-100 text-neutral-800'
+                              }`}>
+                                {place.status === 'active' ? '✅ Active' : '⏸️ Inactive'}
+                              </span>
+                            </div>
+                            
+                            {place.description && (
+                              <p className="text-neutral-600 mb-4 text-lg leading-relaxed">{place.description}</p>
+                            )}
                           </div>
-                          
-                          {place.description && (
-                            <p className="text-gray-600 mb-3">{place.description}</p>
-                          )}
-                          
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-2">
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-6 text-sm text-neutral-600 mb-4">
                           {place.distance !== undefined && (
-                            <span className="flex items-center gap-1 font-medium text-blue-600">
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
+                            <span className="flex items-center gap-2 font-medium text-primary-600 bg-primary-50 px-3 py-1 rounded-lg">
+                              <span>📍</span>
                               {place.distance} miles away
                             </span>
                           )}
                           {place.city && place.state && (
-                            <span className="flex items-center gap-1">
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
+                            <span className="flex items-center gap-2 bg-neutral-50 px-3 py-1 rounded-lg">
+                              <span>🏢</span>
                               {place.city}, {place.state}
                             </span>
                           )}
-                            {place.phone && (
-                              <span className="flex items-center gap-1">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                </svg>
-                                {place.phone}
-                              </span>
-                            )}
-                            {place.email && (
-                              <span className="flex items-center gap-1">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                                {place.email}
-                              </span>
-                            )}
-                          </div>
-                          
-                          {place.website && (
+                          {place.phone && (
+                            <span className="flex items-center gap-2 bg-accent-50 px-3 py-1 rounded-lg">
+                              <span>📞</span>
+                              {place.phone}
+                            </span>
+                          )}
+                          {place.email && (
+                            <span className="flex items-center gap-2 bg-secondary-50 px-3 py-1 rounded-lg">
+                              <span>✉️</span>
+                              {place.email}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {place.website && (
+                          <div className="mb-4">
                             <a 
                               href={place.website} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                              className="btn btn-secondary btn-sm inline-flex items-center gap-2"
                             >
-                              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
+                              <span>🌐</span>
                               Visit Website
                             </a>
-                          )}
-                          
-                          {place.categories && place.categories.length > 0 && (
-                            <div className="mt-3">
-                              <div className="flex flex-wrap gap-1">
-                                {place.categories.map((category) => (
-                                  <span 
-                                    key={category.id}
-                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                                  >
-                                    {category.name}
-                                  </span>
-                                ))}
-                              </div>
+                          </div>
+                        )}
+                        
+                        {place.categories && place.categories.length > 0 && (
+                          <div className="border-t border-neutral-200 pt-4">
+                            <h4 className="text-sm font-medium text-neutral-700 mb-2">Categories:</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {place.categories.map((category) => (
+                                <span 
+                                  key={category.id}
+                                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800"
+                                >
+                                  {category.name}
+                                </span>
+                              ))}
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    </Card>
+                    </div>
                   ))
                 )}
               </div>
@@ -277,21 +320,38 @@ export default function LocationSearchPage() {
 
             {/* Selected Place Details */}
             {selectedPlace && (
-              <Card className="border-blue-200 bg-blue-50">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {selectedPlace.name}
+              <div className="card" style={{ 
+                border: '2px solid var(--primary-200)', 
+                background: 'var(--primary-50)',
+                padding: '1.5rem'
+              }}>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-neutral-900 mb-2">
+                      📍 {selectedPlace.name}
                     </h3>
                     {selectedPlace.description && (
-                      <p className="text-gray-600 mb-2">{selectedPlace.description}</p>
+                      <p className="text-neutral-700 mb-4 text-lg">{selectedPlace.description}</p>
                     )}
-                    <div className="text-sm text-gray-500">
+                    <div className="space-y-2 text-neutral-600">
                       {selectedPlace.city && selectedPlace.state && (
-                        <p>{selectedPlace.city}, {selectedPlace.state}</p>
+                        <p className="flex items-center gap-2">
+                          <span>🏢</span>
+                          {selectedPlace.city}, {selectedPlace.state}
+                        </p>
                       )}
-                      {selectedPlace.phone && <p>Phone: {selectedPlace.phone}</p>}
-                      {selectedPlace.email && <p>Email: {selectedPlace.email}</p>}
+                      {selectedPlace.phone && (
+                        <p className="flex items-center gap-2">
+                          <span>📞</span>
+                          {selectedPlace.phone}
+                        </p>
+                      )}
+                      {selectedPlace.email && (
+                        <p className="flex items-center gap-2">
+                          <span>✉️</span>
+                          {selectedPlace.email}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <Button
@@ -299,10 +359,10 @@ export default function LocationSearchPage() {
                     variant="secondary"
                     size="sm"
                   >
-                    Close
+                    ✕ Close
                   </Button>
                 </div>
-              </Card>
+              </div>
             )}
           </div>
         )}

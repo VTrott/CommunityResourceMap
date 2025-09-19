@@ -43,7 +43,7 @@ A web application that helps people discover and access community resources in t
 - **Frontend**: React + TypeScript (Vite), React Router, TanStack Query, React Hook Form, Zod, Tailwind CSS
 - **Backend**: Spring Boot 3 (Java 21), JPA/Hibernate, Flyway, Actuator
 - **Database**: PostgreSQL 16
-- **External APIs**: OpenStreetMap Nominatim (places data), Google Maps (geocoding & maps)
+- **External APIs**: OpenStreetMap Nominatim (places data), Google Maps (interactive maps & geocoding)
 - **Local Dev**: Docker Compose
 - **UI Framework**: Tailwind CSS with custom component library
 - **Testing**: Vitest + Testing Library with comprehensive test coverage
@@ -62,6 +62,19 @@ Services:
 - api: http://localhost:8080
 - postgres: localhost:5432 (db: crm, user: crm, pwd: crm)
 
+## Google Maps Setup
+
+The application uses Google Maps for interactive mapping with auto-zoom functionality. To enable full map features:
+
+
+ **Features**:
+   - **Auto-Zoom**: Map automatically centers and zooms to your search location
+   - **City Details**: See actual city names, streets, and landmarks instead of just coordinates
+   - **Search Markers**: Green marker shows your search location
+   - **User Location**: Blue marker shows your current location (if available)
+   - **Radius Circle**: Visual circle showing search area
+   - **Interactive Controls**: Full zoom, pan, and street view capabilities
+
 ## Frontend (Vite dev server)
 ```bash
 cd app
@@ -77,7 +90,7 @@ npm run dev
 - **Form Validation**: Client-side validation with Zod and React Hook Form
 - **Real-time Search**: Live search with filters and pagination
 - **Location-Based Search**: Find resources near your address with radius controls
-- **Interactive Maps**: Google Maps integration with color-coded category markers
+- **Interactive Maps**: Full Google Maps integration with auto-zoom, city details, and color-coded category markers
 - **Category Support**: Filter and assign categories to places
 - **Places Import**: Import verified community resources from OpenStreetMap
 - **Type Safety**: Full TypeScript integration throughout
@@ -112,7 +125,7 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 ### Advanced Search & Filtering
 - **Multi-criteria Search**: Filter by name, city, state, status, and categories
 - **Location-Based Search**: Enter your address to find resources within 10-50 miles
-- **Interactive Maps**: Visual map with color-coded markers by category
+- **Interactive Maps**: Google Maps with auto-zoom to search location, city details, and color-coded markers by category
 - **Real-time Results**: Instant search with pagination
 - **Category Filtering**: Select multiple categories to narrow results
 - **Sort Options**: Sort by name, date, or other fields
@@ -169,7 +182,7 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 - **Current Location**: GPS location detection with one-click geocoding
 - **Radius Selection**: Choose search radius (10, 15, 25, or 50 miles)
 - **Category Filtering**: Filter by resource type with visual indicators
-- **Interactive Map**: Google Maps with color-coded markers by category
+- **Interactive Map**: Google Maps with auto-zoom to search location, city details, and color-coded markers by category
 - **List View**: Traditional list view as alternative to map
 - **Distance Display**: Shows exact distance from your location to each place
 - **Smart Sorting**: Results automatically sorted by distance
@@ -203,13 +216,15 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 2. **Option A**: Enter your address (e.g., "123 Main St, City, State")
 3. **Option B**: Click the 📍 button to use your current GPS location
 4. Click "Find Location" to geocode your address (or auto-geocode with GPS)
-5. Select your search radius (10, 15, 25, or 50 miles)
-6. Optionally filter by categories (Food Assistance, Healthcare, etc.)
-7. Click "Search Nearby Places" to find resources
-8. Switch between Map View and List View to explore results
-9.  Results show exact distance from your location
-10. Use keyboard shortcuts (Ctrl+/ to focus search, Escape to clear)
-11.  Print your results using the print button
+5. **Map Auto-Zoom**: The map automatically centers and zooms to your search location
+6. Select your search radius (10, 15, 25, or 50 miles)
+7. Optionally filter by categories (Food Assistance, Healthcare, etc.)
+8. Click "Search Nearby Places" to find resources
+9. **Interactive Map**: See city details, streets, and landmarks with color-coded markers
+10. Switch between Map View and List View to explore results
+11. Results show exact distance from your location
+12. Use keyboard shortcuts (Ctrl+/ to focus search, Escape to clear)
+13. Print your results using the print button
 
 ### Adding a New Place
 1. Navigate to the Places page
@@ -406,7 +421,7 @@ npm run test:run      # run tests once
 3) ✅ **Categories Support** - Frontend ready for category filtering and assignment
 4) ✅ **Categories Backend** - Full category CRUD endpoints and place-category relationships
 5) ✅ **Places Import** - OpenStreetMap integration for importing verified community resources
-6) ✅ **Location-Based Search** - Address geocoding, radius search, interactive maps
+6) ✅ **Location-Based Search** - Address geocoding, radius search, Google Maps with auto-zoom
 7) **Pre-signed S3 uploads** for images (LocalStack in dev)
 8) **Submissions + moderation flow**
 9) **Deploy to AWS** (ECS+ALB, RDS, S3+CloudFront)
@@ -417,7 +432,7 @@ npm run test:run      # run tests once
 - ✅ **Frontend**: Professional UI with search, forms, and category support
 - ✅ **Categories**: Complete backend implementation with 10 sample categories
 - ✅ **Places Import**: OpenStreetMap integration for importing verified community resources
-- ✅ **Location Search**: Address geocoding, radius-based search, interactive maps
+- ✅ **Location Search**: Address geocoding, radius-based search, Google Maps with auto-zoom
 - ✅ **Enhanced UX**: GPS location, distance display, smart sorting, loading states
 - ✅ **Mobile Support**: Responsive design with mobile navigation
 - ✅ **Performance**: Lazy loading, error boundaries, and optimized rendering

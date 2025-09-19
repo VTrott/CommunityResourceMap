@@ -2,6 +2,7 @@ package com.community.crm.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -21,28 +22,10 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable()) 
-            .headers(headers -> headers
-                .frameOptions().deny()
-                .contentTypeOptions().and()
-                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-                    .maxAgeInSeconds(31536000)
-                    .includeSubdomains(true)
-                    .preload(true)
-                )
-                .addHeaderWriter((request, response) -> {
-                    response.setHeader("X-Content-Type-Options", "nosniff");
-                    response.setHeader("X-Frame-Options", "DENY");
-                    response.setHeader("X-XSS-Protection", "1; mode=block");
-                    response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-                    response.setHeader("Permissions-Policy", 
-                        "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=()");
-                })
-            )
+            .headers(headers -> headers.disable())
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/health").permitAll()
-                .requestMatchers("/api/places/**").permitAll()
-                .requestMatchers("/api/categories/**").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .anyRequest().permitAll()
             );
 
         return http.build();
@@ -52,21 +35,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Allow specific origins in production
-        configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:*",
-            "https://localhost:*",
-            "https://*.vercel.app",
-            "https://*.netlify.app"
-        ));
+        // Allow all origins for development
+        configuration.setAllowedOriginPatterns(List.of("*"));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false); // Set to false when using wildcard origins
         configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration("/**", configuration);
         
         return source;
     }

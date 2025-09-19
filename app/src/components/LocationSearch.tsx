@@ -120,122 +120,129 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
   };
 
   return (
-    <div className="space-y-4">
-      {/* Address Input */}
-      <div>
-        <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-          Enter your address
-        </label>
-        <div className="flex gap-2">
-          <input
-            id="address"
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="e.g., 123 Main St, City, State"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            disabled={loading || isGeocoding || isGettingLocation}
-          />
-          <Button
-            onClick={handleGeocode}
-            loading={isGeocoding}
-            disabled={!address.trim() || loading || isGettingLocation}
-            variant="secondary"
-          >
-            Find Location
-          </Button>
-          <Button
-            onClick={handleUseCurrentLocation}
-            loading={isGettingLocation}
-            disabled={loading || isGeocoding}
-            variant="secondary"
-            title="Use your current location"
-          >
-            📍
-          </Button>
-        </div>
-        {geocodingError && (
-          <p className="mt-1 text-sm text-red-600">{geocodingError}</p>
-        )}
-        {geocodedLocation && (
-          <p className="mt-1 text-sm text-green-600">
-            ✓ Found: {geocodedLocation.formattedAddress}
-          </p>
-        )}
-      </div>
-
-      {/* Radius Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Search radius
-        </label>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {RADIUS_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setRadiusMiles(option.value)}
-              className={`px-3 py-2 text-sm font-medium rounded-md border transition-colors ${
-                radiusMiles === option.value
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-              disabled={loading}
+    <div className="card p-8">
+      <div className="space-y-6">
+        {/* Address Input */}
+        <div>
+          <label htmlFor="address" className="block text-lg font-semibold text-neutral-700 mb-3">
+            🏠 Enter your address
+          </label>
+          <div className="flex gap-3">
+            <input
+              id="address"
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="e.g., 123 Main St, City, State"
+              className="input flex-1"
+              disabled={loading || isGeocoding || isGettingLocation}
+            />
+            <Button
+              onClick={handleGeocode}
+              loading={isGeocoding}
+              disabled={!address.trim() || loading || isGettingLocation}
+              variant="secondary"
             >
-              {option.label}
-            </button>
-          ))}
+              🔍 Find Location
+            </Button>
+            <Button
+              onClick={handleUseCurrentLocation}
+              loading={isGettingLocation}
+              disabled={loading || isGeocoding}
+              variant="secondary"
+              title="Use your current location"
+            >
+              📍 Current
+            </Button>
+          </div>
+          {geocodingError && (
+            <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+              <span>⚠️</span>
+              {geocodingError}
+            </p>
+          )}
+          {geocodedLocation && (
+            <p className="mt-2 text-sm text-accent-600 flex items-center gap-1">
+              <span>✅</span>
+              Found: {geocodedLocation.formattedAddress}
+            </p>
+          )}
         </div>
-      </div>
 
-      {/* Category Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Filter by category (optional)
-        </label>
-        {categoriesLoading ? (
-          <p className="text-sm text-gray-500">Loading categories...</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
+        {/* Radius Selection */}
+        <div>
+          <label className="block text-lg font-semibold text-neutral-700 mb-3">
+            📏 Search radius
+          </label>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {RADIUS_OPTIONS.map((option) => (
               <button
-                key={category.id}
-                onClick={() => toggleCategory(category.id)}
-                className={`px-3 py-1 text-sm font-medium rounded-full border transition-colors ${
-                  selectedCategoryIds.includes(category.id)
-                    ? 'bg-blue-100 text-blue-800 border-blue-300'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                key={option.value}
+                onClick={() => setRadiusMiles(option.value)}
+                className={`px-4 py-3 text-sm font-medium rounded-xl border transition-all duration-200 ${
+                  radiusMiles === option.value
+                    ? 'bg-primary-600 text-white border-primary-600 shadow-soft'
+                    : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50 hover:shadow-soft'
                 }`}
                 disabled={loading}
               >
-                {category.name}
+                {option.label}
               </button>
             ))}
           </div>
-        )}
-        {selectedCategoryIds.length > 0 && (
-          <p className="mt-1 text-sm text-gray-500">
-            {selectedCategoryIds.length} categor{selectedCategoryIds.length === 1 ? 'y' : 'ies'} selected
-          </p>
-        )}
-      </div>
+        </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 pt-4">
-        <Button
-          onClick={handleSearch}
-          loading={loading}
-          disabled={!geocodedLocation}
-          className="flex-1"
-        >
-          Search Nearby Places
-        </Button>
-        <Button
-          onClick={handleClear}
-          variant="secondary"
-          disabled={loading}
-        >
-          Clear
-        </Button>
+        {/* Category Selection */}
+        <div>
+          <label className="block text-lg font-semibold text-neutral-700 mb-3">
+            🏷️ Filter by category (optional)
+          </label>
+          {categoriesLoading ? (
+            <p className="text-neutral-500">Loading categories...</p>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => toggleCategory(category.id)}
+                  className={`px-4 py-2 text-sm font-medium rounded-full border transition-all duration-200 ${
+                    selectedCategoryIds.includes(category.id)
+                      ? 'bg-primary-100 text-primary-800 border-primary-300 shadow-soft'
+                      : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50 hover:shadow-soft'
+                  }`}
+                  disabled={loading}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {selectedCategoryIds.length > 0 && (
+            <p className="mt-2 text-sm text-neutral-600">
+              {selectedCategoryIds.length} categor{selectedCategoryIds.length === 1 ? 'y' : 'ies'} selected
+            </p>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-neutral-200">
+          <Button
+            onClick={handleSearch}
+            loading={loading}
+            disabled={!geocodedLocation}
+            className="flex-1 btn-lg"
+          >
+            🔍 Search Nearby Places
+          </Button>
+          <Button
+            onClick={handleClear}
+            variant="secondary"
+            disabled={loading}
+            className="flex-1 sm:flex-none btn-lg"
+          >
+            🗑️ Clear All
+          </Button>
+        </div>
       </div>
     </div>
   );

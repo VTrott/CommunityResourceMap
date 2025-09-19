@@ -17,27 +17,29 @@ const Input: React.FC<InputProps> = ({
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
   
   return (
-    <div className="space-y-1">
+    <div className="space-y-4" style={{ marginTop: '0.5rem' }}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-gray-700">
+        <label htmlFor={inputId} className="text-sm font-medium text-neutral-700" style={{ display: 'block' }}>
           {label}
         </label>
       )}
       <input
         id={inputId}
-        className={`
-          block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-          ${error ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'}
-          ${className}
-        `}
+        className={`input ${error ? 'border-red-300' : ''} ${className}`}
+        style={error ? { 
+          borderColor: '#fca5a5',
+          boxShadow: '0 0 0 4px rgba(248, 113, 113, 0.2)'
+        } : {}}
         {...props}
       />
       {error && (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm flex items-center gap-1" style={{ color: '#dc2626' }}>
+          <span>⚠️</span>
+          {error}
+        </p>
       )}
       {helperText && !error && (
-        <p className="text-sm text-gray-500">{helperText}</p>
+        <p className="text-sm text-neutral-500">{helperText}</p>
       )}
     </div>
   );

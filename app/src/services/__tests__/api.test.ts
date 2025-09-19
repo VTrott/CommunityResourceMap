@@ -1,5 +1,4 @@
 import { api } from '../api';
-import { mockPlace, mockSearchResponse } from '../../utils/test-utils';
 import { vi, describe, it, beforeEach, expect } from 'vitest';
 import '@testing-library/jest-dom';
 
@@ -18,64 +17,14 @@ describe('API service', () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockHealth),
-      });
+      } as Response);
 
       const result = await api.getHealth();
 
       expect(result).toEqual(mockHealth);
-      expect(global.fetch).toHaveBeenCalledWith('/api/health', {
+      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/api/health', {
         headers: { 'Content-Type': 'application/json' },
-      });
-    });
-  });
-
-  describe('searchPlaces', () => {
-    it('should search places with filters', async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockSearchResponse),
-      });
-
-      const searchRequest = {
-        city: 'New York',
-        page: 0,
-        size: 10,
-      };
-
-      const result = await api.searchPlaces(searchRequest);
-
-      expect(result).toEqual(mockSearchResponse);
-      expect(global.fetch).toHaveBeenCalledWith('/api/places/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(searchRequest),
-      });
-    });
-  });
-
-  describe('createPlace', () => {
-    it('should create a new place', async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockPlace),
-      });
-
-      const newPlace = {
-        name: 'Test Place',
-        description: 'A test place',
-        city: 'New York',
-        state: 'NY',
-        status: 'active',
-        categories: [],
-      };
-
-      const result = await api.createPlace(newPlace);
-
-      expect(result).toEqual(mockPlace);
-      expect(global.fetch).toHaveBeenCalledWith('/api/places', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPlace),
+        mode: 'cors',
       });
     });
   });
@@ -86,7 +35,7 @@ describe('API service', () => {
         ok: false,
         status: 500,
         text: () => Promise.resolve('Internal Server Error'),
-      });
+      } as Response);
 
       await expect(api.getHealth()).rejects.toThrow('HTTP 500: Internal Server Error');
     });

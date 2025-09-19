@@ -1,44 +1,30 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../services/api';
-import { Category } from '../types';
+import { useQuery } from '@tanstack/react-query';
 
-export const useCategories = () => {
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+// Mock categories for now - in a real app, this would come from the API
+const MOCK_CATEGORIES: Category[] = [
+  { id: '1', name: 'Food Assistance', slug: 'food-assistance' },
+  { id: '2', name: 'Healthcare', slug: 'healthcare' },
+  { id: '3', name: 'Housing', slug: 'housing' },
+  { id: '4', name: 'Legal Aid', slug: 'legal-aid' },
+  { id: '5', name: 'Family Services', slug: 'family-services' },
+  { id: '6', name: 'Employment', slug: 'employment' },
+  { id: '7', name: 'Education', slug: 'education' },
+];
+
+export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
-    queryFn: api.getCategories,
-  });
-};
-
-export const useCreateCategory = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: api.createCategory,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    queryFn: async (): Promise<Category[]> => {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return MOCK_CATEGORIES;
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
-};
-
-export const useUpdateCategory = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, category }: { id: string; category: Omit<Category, 'id'> }) => 
-      api.updateCategory(id, category),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-    },
-  });
-};
-
-export const useDeleteCategory = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: api.deleteCategory,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-    },
-  });
-};
+}

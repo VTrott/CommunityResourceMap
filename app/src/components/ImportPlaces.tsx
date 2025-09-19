@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { searchPlaces, COMMUNITY_RESOURCE_SEARCHES, convertNominatimToPlace, NominatimPlace } from '../services/nominatim';
+import { COMMUNITY_RESOURCE_SEARCHES, convertNominatimToPlace } from '../services/nominatim';
+import type { NominatimPlace } from '../services/nominatim';
 import { api } from '../services/api';
 import Card from './ui/Card';
 import Button from './ui/Button';
@@ -174,7 +175,7 @@ export default function ImportPlaces({ onClose }: ImportPlacesProps) {
                         </p>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            {place.amenity || place.class}
+                            {place.address?.amenity || place.class}
                           </span>
                           {place.extratags?.phone && (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

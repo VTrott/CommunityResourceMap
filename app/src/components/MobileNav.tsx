@@ -12,57 +12,105 @@ export default function MobileNav({ navItems }: MobileNavProps) {
   return (
     <>
       {/* Mobile menu button */}
-      <div className="sm:hidden">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-          aria-expanded="false"
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="btn btn-secondary btn-sm"
+        style={{
+          padding: '0.5rem',
+          minWidth: '40px',
+          height: '40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        aria-expanded={isOpen}
+        aria-label="Toggle navigation menu"
+      >
+        {/* Hamburger icon */}
+        <svg
+          style={{
+            display: isOpen ? 'none' : 'block',
+            height: '20px',
+            width: '20px',
+            color: 'var(--neutral-600)'
+          }}
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
         >
-          <span className="sr-only">Open main menu</span>
-          {/* Hamburger icon */}
-          <svg
-            className={`${isOpen ? 'hidden' : 'block'} h-6 w-6`}
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          {/* Close icon */}
-          <svg
-            className={`${isOpen ? 'block' : 'hidden'} h-6 w-6`}
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        {/* Close icon */}
+        <svg
+          style={{
+            display: isOpen ? 'block' : 'none',
+            height: '20px',
+            width: '20px',
+            color: 'var(--neutral-600)'
+          }}
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
 
-      {/* Mobile menu */}
-      <div className={`${isOpen ? 'block' : 'hidden'} sm:hidden`}>
-        <div className="pt-2 pb-3 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`block pl-3 pr-4 py-2 text-base font-medium rounded-md transition-colors ${
-                location.pathname === item.path
-                  ? 'bg-blue-50 border-blue-500 text-blue-700 border-l-4'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-              onClick={() => setIsOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
+      {/* Mobile menu overlay */}
+      {isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'flex-end',
+            paddingTop: '70px'
+          }}
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            className="card"
+            style={{
+              margin: '1rem',
+              padding: '1.5rem',
+              minWidth: '200px',
+              maxWidth: '300px',
+              background: 'white'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-2">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`nav-link ${
+                    location.pathname === item.path ? 'nav-link-active' : ''
+                  }`}
+                  style={{
+                    display: 'block',
+                    padding: '0.75rem 1rem',
+                    textDecoration: 'none',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

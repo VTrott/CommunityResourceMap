@@ -2,8 +2,8 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { PlaceSearchRequest } from '../../types';
 import { useCategories } from '../../hooks/useCategories';
+import type { PlaceSearchRequest } from '../../types';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
@@ -36,7 +36,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
   const { data: categories = [] } = useCategories();
   
   const form = useForm<SearchFormValues>({
-    resolver: zodResolver(searchSchema),
+    resolver: zodResolver(searchSchema) as any,
     defaultValues: {
       status: 'active',
       page: 0,
@@ -46,7 +46,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
     },
   });
 
-  const handleSubmit = (values: SearchFormValues) => {
+  const handleSubmit = (values: any) => {
     const cleanValues = {
       ...values,
       categoryIds: values.categoryIds?.length ? values.categoryIds : undefined,
@@ -60,65 +60,67 @@ const SearchForm: React.FC<SearchFormProps> = ({
   }));
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Input
-          {...form.register('name')}
-          label="Name"
-          placeholder="Search by name"
-        />
-        
-        <Input
-          {...form.register('city')}
-          label="City"
-          placeholder="Enter city"
-        />
-        
-        <Input
-          {...form.register('state')}
-          label="State"
-          placeholder="Enter state"
-        />
-        
-        <Select
-          {...form.register('status')}
-          label="Status"
-          options={[
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' },
-            { value: '', label: 'All' },
-          ]}
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Categories
-        </label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {categoryOptions.map((option) => (
-            <label key={option.value} className="flex items-center">
-              <input
-                type="checkbox"
-                value={option.value}
-                {...form.register('categoryIds')}
-                className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-              />
-              <span className="ml-2 text-sm text-gray-700">{option.label}</span>
-            </label>
-          ))}
+    <div className="card-modern">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Input
+            {...form.register('name')}
+            label="Name"
+            placeholder="Search by name"
+          />
+          
+          <Input
+            {...form.register('city')}
+            label="City"
+            placeholder="Enter city"
+          />
+          
+          <Input
+            {...form.register('state')}
+            label="State"
+            placeholder="Enter state"
+          />
+          
+          <Select
+            {...form.register('status')}
+            label="Status"
+            options={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+              { value: '', label: 'All' },
+            ]}
+          />
         </div>
-      </div>
-      
-      <div className="flex gap-3">
-        <Button type="submit" loading={loading}>
-          Search
-        </Button>
-        <Button type="button" variant="secondary" onClick={onClear}>
-          Clear
-        </Button>
-      </div>
-    </form>
+        
+        <div>
+          <label className="block text-lg font-medium text-neutral-700 mb-4">
+            Categories
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {categoryOptions.map((option) => (
+              <label key={option.value} className="flex items-center p-3 rounded-xl hover:bg-neutral-50 transition-colors cursor-pointer">
+                <input
+                  type="checkbox"
+                  value={option.value}
+                  {...form.register('categoryIds')}
+                  className="w-5 h-5 rounded border-neutral-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                />
+                <span className="ml-3 text-sm font-medium text-neutral-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <Button type="submit" loading={loading} size="lg" className="flex-1 sm:flex-none">
+            🔍 Search Resources
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClear} size="lg" className="flex-1 sm:flex-none">
+            🗑️ Clear Filters
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 

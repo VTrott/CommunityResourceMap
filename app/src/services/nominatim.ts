@@ -42,7 +42,7 @@ const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
 let lastRequestTime = 0;
 const RATE_LIMIT_MS = 1000;
 
-async function rateLimitedRequest(url: string): Promise<any> {
+async function rateLimitedRequest(url: string): Promise<unknown> {
   const now = Date.now();
   const timeSinceLastRequest = now - lastRequestTime;
   

@@ -6,7 +6,7 @@ export const placeSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
   description: z.string().max(1000, 'Description must be less than 1000 characters').optional(),
   website: z.string().url('Invalid website URL').optional().or(z.literal('')),
-  phone: z.string().regex(/^[\+]?[1-9][\d]{0,15}$/, 'Invalid phone number').optional().or(z.literal('')),
+  phone: z.string().regex(/^[+]?[1-9][\d]{0,15}$/, 'Invalid phone number').optional().or(z.literal('')),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   addressLine1: z.string().max(255, 'Address line 1 must be less than 255 characters').optional(),
   addressLine2: z.string().max(255, 'Address line 2 must be less than 255 characters').optional(),
@@ -23,7 +23,9 @@ export const placeSchema = z.object({
   })).default([]),
 });
 
-export const createPlaceSchema = placeSchema.omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true });
+export const createPlaceSchema = placeSchema.omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true }).extend({
+  status: z.enum(['active', 'inactive']).default('active'),
+});
 export const updatePlaceSchema = placeSchema.partial().omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true });
 
 // Category validation schemas
