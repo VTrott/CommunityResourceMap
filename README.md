@@ -46,6 +46,7 @@ A web application that helps people discover and access community resources in t
 - **External APIs**: OpenStreetMap Nominatim (places data), Google Maps (geocoding & maps)
 - **Local Dev**: Docker Compose
 - **UI Framework**: Tailwind CSS with custom component library
+- **Testing**: Vitest + Testing Library with comprehensive test coverage
 
 ## Quick start (Docker Compose)
 Prereqs: Docker Desktop installed and running.
@@ -80,16 +81,20 @@ npm run dev
 - **Category Support**: Filter and assign categories to places
 - **Places Import**: Import verified community resources from OpenStreetMap
 - **Type Safety**: Full TypeScript integration throughout
+- **Comprehensive Testing**: Vitest + Testing Library with 21 passing tests
 
 **File Structure:**
 ```
 app/src/
 ├── components/
 │   ├── ui/           # Reusable UI components
-│   └── forms/        # Form components
+│   ├── forms/        # Form components
+│   └── __tests__/    # Component tests
 ├── hooks/            # Custom React hooks
 ├── services/         # API services
+│   └── __tests__/    # Service tests
 ├── types/            # TypeScript type definitions
+├── utils/            # Utility functions and test helpers
 └── pages/            # Page components
 ```
 
@@ -133,6 +138,25 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 - **Modular Architecture**: Well-organized file structure for maintainability
 - **Hot Reload**: Fast development with Vite's hot module replacement
 
+### Enhanced User Experience
+- **Current Location**: GPS location detection with automatic geocoding
+- **Distance Display**: Shows distance from user location to each place
+- **Smart Sorting**: Places automatically sorted by distance from user
+- **Loading Skeletons**: Professional loading states for better perceived performance
+- **Error Boundaries**: Graceful error handling with user-friendly fallbacks
+- **Mobile Navigation**: Responsive mobile menu with hamburger navigation
+- **Keyboard Shortcuts**: Power user features (Ctrl+/ for search, Escape, etc.)
+- **Print Support**: Print-friendly layout for resource lists
+- **Lazy Loading**: Code splitting for faster initial page loads
+
+### Testing Infrastructure
+- **Vitest Integration**: Fast, modern testing framework with Vite integration
+- **Testing Library**: Component testing with user-centric testing utilities
+- **Comprehensive Coverage**: 21 tests covering components, services, and utilities
+- **Mock Support**: Complete mocking setup for external APIs and services
+- **Test Utilities**: Custom test helpers with providers and mock data
+- **Type Safety**: Full TypeScript support in tests with proper typing
+
 ## Application Screens
 
 ### Home Page
@@ -142,10 +166,15 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 
 ### Find Resources Page
 - **Address Input**: Enter your address to find nearby resources
+- **Current Location**: GPS location detection with one-click geocoding
 - **Radius Selection**: Choose search radius (10, 15, 25, or 50 miles)
 - **Category Filtering**: Filter by resource type with visual indicators
 - **Interactive Map**: Google Maps with color-coded markers by category
 - **List View**: Traditional list view as alternative to map
+- **Distance Display**: Shows exact distance from your location to each place
+- **Smart Sorting**: Results automatically sorted by distance
+- **Loading States**: Professional skeleton loading for smooth experience
+- **Print Support**: Print-friendly resource lists
 - **Real-time Search**: Instant results as you type and filter
 
 ### Places Page
@@ -163,19 +192,24 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 
 ### Navigation
 - **Responsive Menu**: Clean navigation with active page indicators
-- **Mobile-Friendly**: Collapsible menu for mobile devices
+- **Mobile-Friendly**: Collapsible hamburger menu for mobile devices
+- **Keyboard Shortcuts**: Power user navigation (Ctrl+/ to focus search, Escape to clear)
 - **Breadcrumbs**: Clear navigation hierarchy
 
 ## Usage Examples
 
 ### Finding Resources Near You 
 1. Navigate to the "Find Resources" page
-2. Enter your address (e.g., "123 Main St, City, State")
-3. Click "Find Location" to geocode your address
-4. Select your search radius (10, 15, 25, or 50 miles)
-5. Optionally filter by categories (Food Assistance, Healthcare, etc.)
-6. Click "Search Nearby Places" to find resources
-7. Switch between Map View and List View to explore results
+2. **Option A**: Enter your address (e.g., "123 Main St, City, State")
+3. **Option B**: Click the 📍 button to use your current GPS location
+4. Click "Find Location" to geocode your address (or auto-geocode with GPS)
+5. Select your search radius (10, 15, 25, or 50 miles)
+6. Optionally filter by categories (Food Assistance, Healthcare, etc.)
+7. Click "Search Nearby Places" to find resources
+8. Switch between Map View and List View to explore results
+9.  Results show exact distance from your location
+10. Use keyboard shortcuts (Ctrl+/ to focus search, Escape to clear)
+11.  Print your results using the print button
 
 ### Adding a New Place
 1. Navigate to the Places page
@@ -359,6 +393,11 @@ curl http://localhost:8080/api/categories
 curl -X POST http://localhost:8080/api/places/search \
   -H 'Content-Type: application/json' \
   -d '{"categoryIds":["1db71ea9-4386-4087-96ba-bf0996136ebb"]}'
+
+# frontend testing
+cd app
+npm test              # run tests in watch mode
+npm run test:run      # run tests once
 ```
 
 ## Roadmap (MVP → hardening)
@@ -379,6 +418,10 @@ curl -X POST http://localhost:8080/api/places/search \
 - ✅ **Categories**: Complete backend implementation with 10 sample categories
 - ✅ **Places Import**: OpenStreetMap integration for importing verified community resources
 - ✅ **Location Search**: Address geocoding, radius-based search, interactive maps
+- ✅ **Enhanced UX**: GPS location, distance display, smart sorting, loading states
+- ✅ **Mobile Support**: Responsive design with mobile navigation
+- ✅ **Performance**: Lazy loading, error boundaries, and optimized rendering
+- ✅ **Testing**: Comprehensive test suite with Vitest 
 - ✅ **Database**: PostgreSQL with Flyway migrations
 - ✅ **Development**: Docker Compose setup for local development
 - 🔄 **Next**: Image uploads and submission workflow

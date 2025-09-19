@@ -22,6 +22,7 @@ export type Place = {
   updatedAt: string;
   deletedAt?: string;
   categories: Category[];
+  distance?: number;
 };
 
 export type Category = {

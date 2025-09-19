@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLocationSearch } from '../hooks/useLocationSearch';
-import { geocodeAddress } from '../services/geocoding';
+import { useKeyboardShortcuts, APP_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
+import { geocodeAddress, calculateDistance } from '../services/geocoding';
 import type { LocationSearchRequest, Place } from '../types';
 import LocationSearch from '../components/LocationSearch';
 import PlacesMap from '../components/PlacesMap';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { PlaceCardSkeleton, MapSkeleton, SearchFormSkeleton } from '../components/LoadingSkeleton';
+import { PrintLayout } from '../components/PrintView';
 
 export default function LocationSearchPage() {
   const [locationRequest, setLocationRequest] = useState<LocationSearchRequest | null>(null);
@@ -14,6 +17,31 @@ export default function LocationSearchPage() {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
   const { data: searchResponse, isLoading, error } = useLocationSearch(locationRequest);
+
+  // Calculate distances for places
+  const placesWithDistances = useMemo(() => {
+    if (!searchResponse?.content || !userLocation) {
+      return searchResponse?.content || [];
+    }
+
+    return searchResponse.content.map(place => {
+      if (!place.latitude || !place.longitude) {
+        return place;
+      }
+
+      const distance = calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        place.latitude,
+        place.longitude
+      );
+
+      return {
+        ...place,
+        distance: Math.round(distance * 10) / 10 
+      };
+    }).sort((a, b) => (a.distance || 0) - (b.distance || 0)); // Sort by distance
+  }, [searchResponse?.content, userLocation]);
 
   const handleSearch = async (searchRequest: LocationSearchRequest) => {
     try {
@@ -40,7 +68,17 @@ export default function LocationSearchPage() {
     setSelectedPlace(place);
   };
 
-  const places = searchResponse?.content || [];
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    APP_SHORTCUTS.FOCUS_SEARCH,
+    APP_SHORTCUTS.ESCAPE,
+    {
+      ...APP_SHORTCUTS.TOGGLE_VIEW,
+      action: () => setViewMode(prev => prev === 'map' ? 'list' : 'map')
+    }
+  ]);
+
+  const places = placesWithDistances;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -52,19 +90,30 @@ export default function LocationSearchPage() {
 
         {/* Search Form */}
         <Card className="mb-6">
-          <LocationSearch
-            onSearch={handleSearch}
-            loading={isLoading}
-            onClear={handleClear}
-          />
+          {isLoading && !locationRequest ? (
+            <SearchFormSkeleton />
+          ) : (
+            <LocationSearch
+              onSearch={handleSearch}
+              loading={isLoading}
+              onClear={handleClear}
+            />
+          )}
         </Card>
 
         {/* Results */}
-        {isLoading && (
-          <Card className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Searching for nearby places...</p>
-          </Card>
+        {isLoading && locationRequest && (
+          <div className="space-y-6">
+            {viewMode === 'map' ? (
+              <MapSkeleton />
+            ) : (
+              <div className="grid gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <PlaceCardSkeleton key={i} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {error && (
@@ -88,6 +137,7 @@ export default function LocationSearchPage() {
                   onClick={() => setViewMode('map')}
                   variant={viewMode === 'map' ? 'primary' : 'secondary'}
                   size="sm"
+                  data-action="toggle-view"
                 >
                   Map View
                 </Button>
@@ -95,6 +145,7 @@ export default function LocationSearchPage() {
                   onClick={() => setViewMode('list')}
                   variant={viewMode === 'list' ? 'primary' : 'secondary'}
                   size="sm"
+                  data-action="toggle-view"
                 >
                   List View
                 </Button>
@@ -105,7 +156,7 @@ export default function LocationSearchPage() {
             {viewMode === 'map' && (
               <PlacesMap
                 places={places}
-                userLocation={userLocation}
+                userLocation={userLocation || undefined}
                 radiusMiles={locationRequest?.radiusMiles}
                 onPlaceClick={handlePlaceClick}
                 selectedPlace={selectedPlace}
@@ -151,16 +202,25 @@ export default function LocationSearchPage() {
                             <p className="text-gray-600 mb-3">{place.description}</p>
                           )}
                           
-                          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-2">
-                            {place.city && place.state && (
-                              <span className="flex items-center gap-1">
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                {place.city}, {place.state}
-                              </span>
-                            )}
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-2">
+                          {place.distance !== undefined && (
+                            <span className="flex items-center gap-1 font-medium text-blue-600">
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              {place.distance} miles away
+                            </span>
+                          )}
+                          {place.city && place.state && (
+                            <span className="flex items-center gap-1">
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              {place.city}, {place.state}
+                            </span>
+                          )}
                             {place.phone && (
                               <span className="flex items-center gap-1">
                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -246,6 +306,13 @@ export default function LocationSearchPage() {
             )}
           </div>
         )}
+
+        {/* Print Layout */}
+        <PrintLayout 
+          places={places} 
+          userLocation={userLocation || undefined} 
+          radiusMiles={locationRequest?.radiusMiles} 
+        />
       </div>
     </div>
   );

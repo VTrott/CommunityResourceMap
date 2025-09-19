@@ -16,6 +16,7 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [geocodingError, setGeocodingError] = useState<string | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [geocodedLocation, setGeocodedLocation] = useState<GeocodingResult | null>(null);
 
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -40,6 +41,53 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
     }
   };
 
+  const handleUseCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      setGeocodingError('Geolocation is not supported by this browser');
+      return;
+    }
+
+    setIsGettingLocation(true);
+    setGeocodingError(null);
+    setGeocodedLocation(null);
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000, // 5 minutes
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      const result = await geocodeAddress(`${latitude}, ${longitude}`);
+      setGeocodedLocation(result);
+      setAddress(result.formattedAddress);
+    } catch (error) {
+      if (error instanceof GeolocationPositionError) {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setGeocodingError('Location access denied. Please enter your address manually.');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setGeocodingError('Location information unavailable. Please enter your address manually.');
+            break;
+          case error.TIMEOUT:
+            setGeocodingError('Location request timed out. Please enter your address manually.');
+            break;
+          default:
+            setGeocodingError('Unable to get your location. Please enter your address manually.');
+        }
+      } else {
+        setGeocodingError('Failed to get your location. Please enter your address manually.');
+      }
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
   const handleSearch = () => {
     if (!geocodedLocation) {
       setGeocodingError('Please geocode an address first');
@@ -59,6 +107,7 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
     setSelectedCategoryIds([]);
     setGeocodingError(null);
     setGeocodedLocation(null);
+    setIsGettingLocation(false);
     onClear?.();
   };
 
@@ -85,15 +134,24 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
             onChange={(e) => setAddress(e.target.value)}
             placeholder="e.g., 123 Main St, City, State"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            disabled={loading || isGeocoding}
+            disabled={loading || isGeocoding || isGettingLocation}
           />
           <Button
             onClick={handleGeocode}
             loading={isGeocoding}
-            disabled={!address.trim() || loading}
+            disabled={!address.trim() || loading || isGettingLocation}
             variant="secondary"
           >
             Find Location
+          </Button>
+          <Button
+            onClick={handleUseCurrentLocation}
+            loading={isGettingLocation}
+            disabled={loading || isGeocoding}
+            variant="secondary"
+            title="Use your current location"
+          >
+            📍
           </Button>
         </div>
         {geocodingError && (
