@@ -36,7 +36,7 @@ export default function App() {
               {/* Logo */}
               <div className="flex items-center">
                 <h1 className="text-xl font-bold text-gradient">
-                  Community Resource Map
+                  CommunityConnect
                 </h1>
               </div>
               
@@ -112,7 +112,7 @@ export default function App() {
                   
                   <div className="text-center relative" style={{ zIndex: 10, maxWidth: '1024px', margin: '0 auto', padding: '0 1rem' }}>
                     <h1 className="text-6xl font-bold text-gradient mb-6 animate-fade-in" style={{ fontSize: 'clamp(3rem, 8vw, 4.5rem)' }}>
-                      Welcome to Community Resource Map
+                      Welcome to CommunityConnect
                     </h1>
                     <p className="text-xl text-neutral-600 mb-12 animate-fade-in" style={{ 
                       animationDelay: '0.2s',

@@ -1,12 +1,12 @@
-# Community Resource Map
+# CommunityConnect
 
-A web application that helps people discover and access community resources in their area. Whether you're looking for food assistance, healthcare, housing support, or legal aid, this map connects you with verified local organizations and services.
+A web application that helps people discover and access community resources in their area. Whether you're looking for food assistance, healthcare, housing support, or legal aid, CommunityConnect connects you with verified local organizations and services.
 
 ## Product Overview
 
 **Problem**: Finding reliable community resources can be difficult, especially during times of need. Information is often scattered across multiple websites, outdated, or hard to discover.
 
-**Solution**: A centralized, searchable map of community resources with real-time information, user submissions, and community moderation.
+**Solution**: CommunityConnect provides a centralized, searchable map of community resources with real-time information, user submissions, and community moderation.
 
 ### Key Features
 
