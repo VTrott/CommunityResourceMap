@@ -6,7 +6,7 @@ import type { LocationSearchRequest, Place } from '../types';
 import LocationSearch from '../components/LocationSearch';
 import PlacesMap from '../components/PlacesMap';
 import Button from '../components/ui/Button';
-import { PlaceCardSkeleton, MapSkeleton, SearchFormSkeleton } from '../components/LoadingSkeleton';
+import { PlaceCardSkeleton, MapSkeleton } from '../components/LoadingSkeleton';
 import { PrintLayout } from '../components/PrintView';
 
 export default function LocationSearchPage() {
@@ -99,21 +99,17 @@ export default function LocationSearchPage() {
             Find Resources Near You
           </h1>
           <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-            Discover community resources within your area. Enter your address to get started.
+            Discover community resources within your area. Enter your address or use your current location to search instantly.
           </p>
         </div>
 
         {/* Search Form */}
         <div className="mb-8">
-          {isLoading && !locationRequest ? (
-            <SearchFormSkeleton />
-          ) : (
-            <LocationSearch
-              onSearch={handleSearch}
-              loading={isLoading}
-              onClear={handleClear}
-            />
-          )}
+          <LocationSearch
+            onSearch={handleSearch}
+            loading={isLoading && !!locationRequest}
+            onClear={handleClear}
+          />
         </div>
 
         {/* Loading State */}

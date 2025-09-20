@@ -14,12 +14,11 @@ interface PlacesMapProps {
 export default function PlacesMap({
   places,
   userLocation,
-  searchCenter,
   radiusMiles,
   onPlaceClick,
   selectedPlace
 }: PlacesMapProps) {
-  // Check if Google Maps is properly configured
+
   if (!isGoogleMapsConfigured()) {
     return (
       <div className="bg-yellow-50 rounded-lg p-8 text-center min-h-[400px] flex flex-col items-center justify-center">

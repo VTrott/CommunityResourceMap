@@ -22,6 +22,7 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [geocodedLocation, setGeocodedLocation] = useState<GeocodingResult | null>(null);
 
+
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
 
   const handleGeocode = async () => {
@@ -39,6 +40,16 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
       const fullAddress = `${streetAddress}, ${city}, ${state}${zipCode ? `, ${zipCode}` : ''}`;
       const result = await geocodeAddress(fullAddress);
       setGeocodedLocation(result);
+      
+      onSearch({
+        address: fullAddress,
+        radiusMiles,
+        categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+        city,
+        state,
+        latitude: result.latitude,
+        longitude: result.longitude,
+      });
     } catch (error) {
       setGeocodingError(error instanceof Error ? error.message : 'Failed to geocode address');
     } finally {
@@ -71,18 +82,41 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
       setGeocodedLocation(result);
       
       const addressParts = result.formattedAddress.split(',');
+      let newStreetAddress = streetAddress;
+      let newCity = city;
+      let newState = state;
+      let newZipCode = zipCode;
+      
       if (addressParts.length >= 3) {
-        setStreetAddress(addressParts[0].trim());
-        setCity(addressParts[1].trim());
+        newStreetAddress = addressParts[0].trim();
+        newCity = addressParts[1].trim();
         const stateZipPart = addressParts[2].trim();
         const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
         if (stateZipMatch) {
-          setState(stateZipMatch[1]);
-          setZipCode(stateZipMatch[2]);
+          newState = stateZipMatch[1];
+          newZipCode = stateZipMatch[2];
         } else {
-          setState(stateZipPart);
+          newState = stateZipPart;
         }
+        
+        
+        setStreetAddress(newStreetAddress);
+        setCity(newCity);
+        setState(newState);
+        setZipCode(newZipCode);
       }
+      
+
+      const fullAddress = `${newStreetAddress}, ${newCity}, ${newState}${newZipCode ? `, ${newZipCode}` : ''}`;
+      onSearch({
+        address: fullAddress,
+        radiusMiles,
+        categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+        city: newCity,
+        state: newState,
+        latitude: result.latitude,
+        longitude: result.longitude,
+      });
     } catch (error) {
       if (error instanceof GeolocationPositionError) {
         switch (error.code) {
@@ -106,25 +140,6 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
     }
   };
 
-  const handleSearch = () => {
-    if (!geocodedLocation) {
-      setGeocodingError('Please geocode an address first');
-      return;
-    }
-
-    // Construct full address for the search request
-    const fullAddress = `${streetAddress}, ${city}, ${state}${zipCode ? `, ${zipCode}` : ''}`;
-
-    onSearch({
-      address: fullAddress,
-      radiusMiles,
-      categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
-      city,
-      state,
-      latitude: geocodedLocation.latitude,
-      longitude: geocodedLocation.longitude,
-    });
-  };
 
   const handleClear = () => {
     setStreetAddress('');
@@ -150,11 +165,23 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
   return (
     <div className="card p-8">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-        {/* Address Input */}
-        <div style={{ marginBottom: '2rem' }}>
-          <label style={{ display: 'block', fontSize: '1.125rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+        {/* Header with Clear Filters Button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <label style={{ fontSize: '1.125rem', fontWeight: '600', color: '#111827' }}>
             Enter your address
           </label>
+          <Button
+            onClick={handleClear}
+            variant="secondary"
+            disabled={isGeocoding || isGettingLocation}
+            size="sm"
+          >
+            🗑️ Clear Filters
+          </Button>
+        </div>
+
+        {/* Address Input */}
+        <div style={{ marginBottom: '2rem' }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label htmlFor="streetAddress" className="block text-sm font-medium text-neutral-700 mb-2">
@@ -214,25 +241,6 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
                 maxLength={10}
               />
             </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              onClick={handleGeocode}
-              loading={isGeocoding}
-              disabled={!streetAddress.trim() || !city.trim() || !state.trim() || loading || isGettingLocation}
-              variant="secondary"
-            >
-              🔍 Find Location
-            </Button>
-            <Button
-              onClick={handleUseCurrentLocation}
-              loading={isGettingLocation}
-              disabled={loading || isGeocoding}
-              variant="secondary"
-              title="Use your current location"
-            >
-              📍 Current
-            </Button>
           </div>
           {geocodingError && (
             <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
@@ -462,22 +470,23 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-neutral-200">
+        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-neutral-200 justify-center">
           <Button
-            onClick={handleSearch}
-            loading={loading}
-            disabled={!geocodedLocation}
-            className="flex-1 btn-lg"
+            onClick={handleGeocode}
+            disabled={!streetAddress.trim() || !city.trim() || !state.trim() || isGettingLocation || isGeocoding}
+            variant="primary"
+            className="sm:w-auto btn-lg"
           >
-            🔍 Search Nearby Places
+            {isGeocoding ? 'Finding Location...' : '🔍 Search by Address'}
           </Button>
           <Button
-            onClick={handleClear}
-            variant="secondary"
-            disabled={loading}
-            className="flex-1 sm:flex-none btn-lg"
+            onClick={handleUseCurrentLocation}
+            disabled={isGeocoding || isGettingLocation}
+            variant="primary"
+            title="Use your current location and search for resources"
+            className="sm:w-auto btn-lg"
           >
-            🗑️ Clear All
+            {isGettingLocation ? 'Getting Location...' : '📍 Search by Location'}
           </Button>
         </div>
       </div>
