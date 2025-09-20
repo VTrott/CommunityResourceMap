@@ -97,8 +97,8 @@ describe('geocoding service', () => {
   describe('RADIUS_OPTIONS', () => {
     it('should have correct radius options', () => {
       expect(RADIUS_OPTIONS).toEqual([
+        { value: 5, label: '5 miles' },
         { value: 10, label: '10 miles' },
-        { value: 15, label: '15 miles' },
         { value: 25, label: '25 miles' },
         { value: 50, label: '50 miles' },
       ]);

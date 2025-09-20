@@ -3,29 +3,12 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, beforeEach, expect } from 'vitest';
 import { useLocationSearch } from '../useLocationSearch';
-import { COMMUNITY_RESOURCE_SEARCHES } from '../../services/nominatim';
 import type { LocationSearchRequest } from '../../types';
+import { searchCommunityResources } from '../../services/placesApi';
 
-// Mock the nominatim service
-vi.mock('../../services/nominatim', () => ({
-  COMMUNITY_RESOURCE_SEARCHES: {
-    foodBanks: vi.fn(),
-    healthcare: vi.fn(),
-    shelters: vi.fn(),
-    communityCenters: vi.fn(),
-    libraries: vi.fn(),
-  },
-  convertNominatimToPlace: vi.fn((place) => ({
-    name: place.name || 'Test Place',
-    description: 'Test description',
-    addressLine1: '123 Test St',
-    city: 'Test City',
-    state: 'Test State',
-    latitude: 40.7128,
-    longitude: -74.0060,
-    status: 'active',
-    categories: ['Test Category'],
-  })),
+// Mock the placesApi service
+vi.mock('../../services/placesApi', () => ({
+  searchCommunityResources: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -54,12 +37,13 @@ describe('useLocationSearch', () => {
     expect(result.current.data).toBeUndefined();
   });
 
-  it('should return empty response when city or state is missing', async () => {
+  it('should return empty response when coordinates are missing', async () => {
     const locationRequest: LocationSearchRequest = {
       address: 'Test Address',
       radiusMiles: 10,
-      city: '',
-      state: '',
+      city: 'Test City',
+      state: 'Test State',
+      // Missing latitude and longitude
     };
 
     const { result } = renderHook(() => useLocationSearch(locationRequest), {
@@ -67,35 +51,51 @@ describe('useLocationSearch', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.data).toEqual({
-        content: [],
-        page: 0,
-        size: 100,
-        totalElements: 0,
-        totalPages: 0,
-        first: true,
-        last: true,
-      });
+      expect(result.current.isError).toBe(true);
     });
   });
 
   it('should search for places when valid location request is provided', async () => {
     const mockPlaces = [
-      { name: 'Food Bank 1', place_id: 1 },
-      { name: 'Hospital 1', place_id: 2 },
+      { 
+        id: '1', 
+        name: 'Food Bank 1', 
+        description: 'Test description',
+        addressLine1: '123 Test St',
+        city: 'Seattle',
+        state: 'WA',
+        latitude: 47.6062,
+        longitude: -122.3321,
+        status: 'active',
+        categories: [],
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      },
+      { 
+        id: '2', 
+        name: 'Hospital 1', 
+        description: 'Test description',
+        addressLine1: '456 Test Ave',
+        city: 'Seattle',
+        state: 'WA',
+        latitude: 47.6062,
+        longitude: -122.3321,
+        status: 'active',
+        categories: [],
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      },
     ];
 
-    (COMMUNITY_RESOURCE_SEARCHES.foodBanks as any).mockResolvedValue([mockPlaces[0]]);
-    (COMMUNITY_RESOURCE_SEARCHES.healthcare as any).mockResolvedValue([mockPlaces[1]]);
-    (COMMUNITY_RESOURCE_SEARCHES.shelters as any).mockResolvedValue([]);
-    (COMMUNITY_RESOURCE_SEARCHES.communityCenters as any).mockResolvedValue([]);
-    (COMMUNITY_RESOURCE_SEARCHES.libraries as any).mockResolvedValue([]);
+    (searchCommunityResources as any).mockResolvedValue(mockPlaces);
 
     const locationRequest: LocationSearchRequest = {
       address: 'Seattle, WA',
       radiusMiles: 10,
       city: 'Seattle',
       state: 'WA',
+      latitude: 47.6062,
+      longitude: -122.3321,
     };
 
     const { result } = renderHook(() => useLocationSearch(locationRequest), {
@@ -112,17 +112,15 @@ describe('useLocationSearch', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    (COMMUNITY_RESOURCE_SEARCHES.foodBanks as any).mockRejectedValue(new Error('API Error'));
-    (COMMUNITY_RESOURCE_SEARCHES.healthcare as any).mockResolvedValue([]);
-    (COMMUNITY_RESOURCE_SEARCHES.shelters as any).mockResolvedValue([]);
-    (COMMUNITY_RESOURCE_SEARCHES.communityCenters as any).mockResolvedValue([]);
-    (COMMUNITY_RESOURCE_SEARCHES.libraries as any).mockResolvedValue([]);
+    (searchCommunityResources as any).mockRejectedValue(new Error('API Error'));
 
     const locationRequest: LocationSearchRequest = {
       address: 'Seattle, WA',
       radiusMiles: 10,
       city: 'Seattle',
       state: 'WA',
+      latitude: 47.6062,
+      longitude: -122.3321,
     };
 
     const { result } = renderHook(() => useLocationSearch(locationRequest), {

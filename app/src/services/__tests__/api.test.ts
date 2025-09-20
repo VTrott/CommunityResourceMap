@@ -22,7 +22,7 @@ describe('API service', () => {
       const result = await api.getHealth();
 
       expect(result).toEqual(mockHealth);
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/api/health', {
+      expect(global.fetch).toHaveBeenCalledWith('/api/health', {
         headers: { 'Content-Type': 'application/json' },
         mode: 'cors',
       });

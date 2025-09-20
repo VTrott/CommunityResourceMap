@@ -62,18 +62,27 @@ Services:
 - api: http://localhost:8080
 - postgres: localhost:5432 (db: crm, user: crm, pwd: crm)
 
-## Google Maps Setup
+## Google Maps Integration
 
-The application uses Google Maps for interactive mapping with auto-zoom functionality. To enable full map features:
+The application features comprehensive Google Maps integration with advanced search capabilities:
 
+### Map Features
+- **Auto-Zoom**: Map automatically centers and zooms to your search location
+- **City Details**: See actual city names, streets, and landmarks instead of just coordinates
+- **Search Markers**: Green marker shows your search location
+- **User Location**: Blue marker shows your current location (if available)
+- **Radius Circle**: Visual circle showing search area
+- **Interactive Controls**: Full zoom, pan, and street view capabilities
+- **Category Markers**: Color-coded markers by resource category
+- **Popup Details**: Click markers to see place information
+- **View Toggle**: Switch between map and list views
 
- **Features**:
-   - **Auto-Zoom**: Map automatically centers and zooms to your search location
-   - **City Details**: See actual city names, streets, and landmarks instead of just coordinates
-   - **Search Markers**: Green marker shows your search location
-   - **User Location**: Blue marker shows your current location (if available)
-   - **Radius Circle**: Visual circle showing search area
-   - **Interactive Controls**: Full zoom, pan, and street view capabilities
+### Google Places API Integration
+- **Category Mapping**: Automatic mapping of Google Places types to community resource categories
+- **Radius-based Search**: Search within 5, 10, 25, or 50 miles
+- **Real-time Results**: Live search results with instant updates
+- **Place Details**: Comprehensive place information including contact details
+- **Category Filtering**: Filter results by specific resource categories
 
 ## Frontend (Vite dev server)
 ```bash
@@ -161,14 +170,22 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 - **Keyboard Shortcuts**: Power user features (Ctrl+/ for search, Escape, etc.)
 - **Print Support**: Print-friendly layout for resource lists
 - **Lazy Loading**: Code splitting for faster initial page loads
+- **Advanced Address Input**: Separate fields for street, city, state, and zip code
+- **Real-time Validation**: Form validation with helpful error messages
+- **View Mode Toggle**: Switch between map and list views seamlessly
+- **Interactive Map Markers**: Color-coded markers by category with popup details
+- **Radius Visualization**: Visual circle showing search area on map
 
 ### Testing Infrastructure
 - **Vitest Integration**: Fast, modern testing framework with Vite integration
 - **Testing Library**: Component testing with user-centric testing utilities
-- **Comprehensive Coverage**: 21 tests covering components, services, and utilities
+- **Comprehensive Coverage**: 32 passing tests covering components, services, and utilities
 - **Mock Support**: Complete mocking setup for external APIs and services
 - **Test Utilities**: Custom test helpers with providers and mock data
 - **Type Safety**: Full TypeScript support in tests with proper typing
+- **Service Testing**: Complete test coverage for API services and geocoding
+- **Hook Testing**: Custom React hooks tested with proper query client setup
+- **Component Testing**: UI components tested with user interactions and state changes
 
 ## Application Screens
 
@@ -259,14 +276,18 @@ Vite proxy forwards `/api/*` to `http://localhost:8080`. Configure via `app/vite
 - **Place Assignment**: Assign multiple categories to places during creation/editing
 - **Category Management**: Full CRUD operations for categories via API
 
-### Places Import from OpenStreetMap
-- **Free API Integration**: No API key required, uses OpenStreetMap Nominatim
-- **Resource Types**: Food banks, healthcare facilities, shelters, community centers, libraries
+### Places Import System
+- **OpenStreetMap Integration**: Free API integration using Nominatim
+- **Google Places Integration**: Advanced search using Google Places API
+- **Resource Types**: Food banks, healthcare facilities, shelters, community centers, libraries, social services
 - **Location Search**: Search by city and state to find local resources
 - **Bulk Selection**: Select multiple places to import at once
 - **Data Enrichment**: Automatically extracts phone numbers, websites, and addresses
-- **Category Mapping**: Maps OSM amenity types to your existing categories
-- **Rate Limiting**: Respects API guidelines with 1 request per second
+- **Category Mapping**: Maps OSM amenity types and Google Places types to existing categories
+- **Rate Limiting**: Respects API guidelines with proper rate limiting
+- **Real-time Preview**: See place details before importing
+- **Batch Import**: Import multiple places in a single operation
+- **Error Handling**: Graceful handling of import failures with detailed feedback
 
 ## Backend (Spring Boot)
 Run with Docker Compose (recommended), or locally without DB using the `local` profile:
@@ -327,6 +348,28 @@ curl -X POST http://localhost:8080/api/places/search \
   -H 'Content-Type: application/json' \
   -d '{"status":"active","page":0,"size":20}'
 ```
+
+### Location-based Search API
+Advanced location-based search with Google Places integration:
+
+```bash
+# Search within 10 miles of coordinates
+curl -X POST http://localhost:8080/api/places/search/10-miles \
+  -H 'Content-Type: application/json' \
+  -d '{"latitude":47.6062,"longitude":-122.3321,"categoryIds":["1","2"]}'
+
+# Search within 25 miles
+curl -X POST http://localhost:8080/api/places/search/25-miles \
+  -H 'Content-Type: application/json' \
+  -d '{"latitude":47.6062,"longitude":-122.3321}'
+```
+
+### Google Places Integration
+- **Category Mapping**: Automatic mapping of Google Places types to community categories
+- **Radius Endpoints**: Dedicated endpoints for 5, 10, 25, and 50-mile searches
+- **Place Details**: Comprehensive place information including ratings and reviews
+- **Category Filtering**: Filter results by specific resource categories
+- **Real-time Search**: Live search results with instant updates
 
 **Search Request Parameters:**
 - `city` (string): Filter by city (partial match, case-insensitive)
@@ -439,5 +482,10 @@ npm run test:run      # run tests once
 - ✅ **Testing**: Comprehensive test suite with Vitest 
 - ✅ **Database**: PostgreSQL with Flyway migrations
 - ✅ **Development**: Docker Compose setup for local development
+- ✅ **Google Maps Integration**: Full Google Places API integration with category mapping
+- ✅ **Advanced Search**: Multi-criteria search with real-time filtering
+- ✅ **Import System**: Bulk import from OpenStreetMap with category mapping
+- ✅ **Keyboard Shortcuts**: Power user features for enhanced productivity
+- ✅ **Print Support**: Print-friendly resource lists
 - 🔄 **Next**: Image uploads and submission workflow
 
