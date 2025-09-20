@@ -11,10 +11,14 @@ export function useLocationSearch(locationRequest: LocationSearchRequest | null)
     queryFn: async (): Promise<PlaceSearchResponse | null> => {
       if (!locationRequest) return null;
 
-      // Use coordinates from the request, fallback to default if not provided
+      // Use coordinates from the request - require them to be provided
+      if (!locationRequest.latitude || !locationRequest.longitude) {
+        throw new Error('Coordinates are required for search');
+      }
+      
       const location = { 
-        latitude: locationRequest.latitude || 40.7128, 
-        longitude: locationRequest.longitude || -74.0060 
+        latitude: locationRequest.latitude, 
+        longitude: locationRequest.longitude 
       };
 
       try {

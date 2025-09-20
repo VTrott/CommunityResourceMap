@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react';
 import { useLocationSearch } from '../hooks/useLocationSearch';
 import { useKeyboardShortcuts, APP_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
 import { calculateDistance } from '../services/geocoding';
-import { geocodeAddress } from '../services/googleGeocoding';
-import { GOOGLE_MAPS_API_KEY } from '../config/maps';
 import type { LocationSearchRequest, Place } from '../types';
 import LocationSearch from '../components/LocationSearch';
 import PlacesMap from '../components/PlacesMap';
@@ -47,42 +45,21 @@ export default function LocationSearchPage() {
 
   const handleSearch = async (searchRequest: LocationSearchRequest) => {
     try {
-      // Geocode the address to get coordinates
-      const geocodingResult = await geocodeAddress(searchRequest.address, GOOGLE_MAPS_API_KEY);
-      
-      if (geocodingResult) {
-        // Set the search center for the map
+     
+      if (searchRequest.latitude && searchRequest.longitude) {
         setSearchCenter({
-          latitude: geocodingResult.latitude,
-          longitude: geocodingResult.longitude
+          latitude: searchRequest.latitude,
+          longitude: searchRequest.longitude
         });
         
-        // Extract city and state from geocoding result or address
-        const city = geocodingResult.city || searchRequest.address.split(',')[0]?.trim() || '';
-        const state = geocodingResult.state || searchRequest.address.split(',')[1]?.trim() || '';
-        
-        // Set the location request for the hook with coordinates
-        setLocationRequest({
-          ...searchRequest,
-          city,
-          state,
-          latitude: geocodingResult.latitude,
-          longitude: geocodingResult.longitude,
+        setUserLocation({
+          latitude: searchRequest.latitude,
+          longitude: searchRequest.longitude
         });
+
+        setLocationRequest(searchRequest);
       } else {
-        // Fallback to simple city/state search if geocoding fails
-        const addressParts = searchRequest.address.split(',').map(part => part.trim());
-        const city = addressParts[0] || '';
-        const state = addressParts[1] || '';
-        
-        setLocationRequest({
-          ...searchRequest,
-          city,
-          state,
-          // Use default coordinates if geocoding fails
-          latitude: 40.7128,
-          longitude: -74.0060,
-        });
+        throw new Error('No coordinates provided in search request');
       }
       
       setSelectedPlace(null);
@@ -102,7 +79,6 @@ export default function LocationSearchPage() {
     setSelectedPlace(place);
   };
 
-  // Keyboard shortcuts
   useKeyboardShortcuts([
     APP_SHORTCUTS.FOCUS_SEARCH,
     APP_SHORTCUTS.ESCAPE,
@@ -117,7 +93,7 @@ export default function LocationSearchPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       <div className="container section-padding">
-        {/* Hero Section */}
+        {/* Welcome Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gradient mb-4">
             Find Resources Near You

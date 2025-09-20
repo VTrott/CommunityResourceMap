@@ -41,8 +41,7 @@ public class PlaceSearchRequest {
     public void setSortBy(String sortBy) { this.sortBy = sortBy; }
     public String getSortDirection() { return sortDirection; }
     public void setSortDirection(String sortDirection) { this.sortDirection = sortDirection; }
-    
-    // Location-based search getters and setters
+   
     public BigDecimal getLatitude() { return latitude; }
     public void setLatitude(BigDecimal latitude) { this.latitude = latitude; }
     public BigDecimal getLongitude() { return longitude; }

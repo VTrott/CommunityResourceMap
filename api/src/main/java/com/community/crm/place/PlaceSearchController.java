@@ -121,6 +121,7 @@ public class PlaceSearchController {
                 return ResponseEntity.badRequest().body(errorResponse);
             }
         }
+        
     
 
 
@@ -197,15 +198,14 @@ public class PlaceSearchController {
                 
                 System.out.println("Using radius: " + radiusMeters + " meters (" + radiusMiles + " miles)");
                 
-                // Use a single broader query and let the radius do the filtering
-                // This should give us different results based on radius
+                List<Map<String, Object>> allPlaces = new ArrayList<>();
                 String query = "community services"; // Broader search term
                 System.out.println("Searching for '" + query + "' at " + latitude + ", " + longitude + " with " + radiusMiles + " mile radius");
                 
                 List<Map<String, Object>> places = searchGooglePlaces(query, latitude, longitude, radiusMeters);
+                allPlaces.addAll(places);
                 System.out.println("Found " + places.size() + " places for " + query);
                 
-                // Also try a few specific queries but with different result limits based on radius
                 List<String> additionalQueries = Arrays.asList("hospital", "pharmacy", "library");
                 int maxResultsPerQuery = Math.min(20, radiusMiles * 2); // Adjust results based on radius
                 
@@ -213,17 +213,28 @@ public class PlaceSearchController {
                     System.out.println("Searching for " + additionalQuery + " (max " + maxResultsPerQuery + " results)");
                     List<Map<String, Object>> additionalPlaces = searchGooglePlacesWithLimit(additionalQuery, latitude, longitude, radiusMeters, maxResultsPerQuery);
                     System.out.println("Found " + additionalPlaces.size() + " places for " + additionalQuery);
-                    places.addAll(additionalPlaces);
+                    allPlaces.addAll(additionalPlaces);
+                }
+                
+                List<Map<String, Object>> convertedPlaces = new ArrayList<>();
+                for (Map<String, Object> googlePlace : allPlaces) {
+                    try {
+                        Map<String, Object> convertedPlace = convertGooglePlaceToPlace(googlePlace);
+                        convertedPlaces.add(convertedPlace);
+                    } catch (Exception e) {
+                        System.err.println("Error converting place: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
                 
                 Map<String, Object> response = new HashMap<>();
-                response.put("content", places);
+                response.put("content", convertedPlaces);
                 response.put("page", 0);
-                response.put("size", places.size());
-                response.put("totalElements", (long) places.size());
+                response.put("size", convertedPlaces.size());
+                response.put("totalElements", (long) convertedPlaces.size());
                 response.put("totalPages", 1);
 
-                System.out.println("=== SEARCH COMPLETE: " + places.size() + " places for " + radiusMiles + " mile radius ===");
+                System.out.println("=== SEARCH COMPLETE: " + convertedPlaces.size() + " places for " + radiusMiles + " mile radius ===");
                 return ResponseEntity.ok(response);
 
             } catch (Exception e) {
@@ -340,7 +351,7 @@ public class PlaceSearchController {
         // Convert categories from new API format
         @SuppressWarnings("unchecked")
         List<String> types = (List<String>) googlePlace.get("types");
-        List<Map<String, Object>> categories = getCategoriesFromGooglePlace((String) googlePlace.get("displayName"), types);
+        List<Map<String, Object>> categories = getCategoriesFromGooglePlace(displayName, types);
         place.put("categories", categories);
         
         return place;
@@ -350,7 +361,6 @@ public class PlaceSearchController {
         Set<String> categoryNames = new HashSet<>();
         
         if (types != null) {
-            // Check each type against our category map
             for (String type : types) {
                 List<String> mappedCategories = GOOGLE_PLACES_CATEGORY_MAP.get(type);
                 if (mappedCategories != null) {
@@ -359,7 +369,6 @@ public class PlaceSearchController {
             }
         }
         
-        // If no specific categories found, try to infer from name
         if (categoryNames.isEmpty() && name != null) {
             String lowerName = name.toLowerCase();
             if (lowerName.contains("hospital") || lowerName.contains("medical") || lowerName.contains("health")) {
