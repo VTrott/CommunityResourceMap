@@ -5,9 +5,9 @@ import { calculateDistance } from '../services/geocoding';
 import type { LocationSearchRequest, Place } from '../types';
 import LocationSearch from '../components/LocationSearch';
 import PlacesMap from '../components/PlacesMap';
+import CommunityResourceSection from '../components/CommunityResourceSection';
 import Button from '../components/ui/Button';
 import { PlaceCardSkeleton, MapSkeleton } from '../components/LoadingSkeleton';
-import { PrintLayout } from '../components/PrintView';
 
 export default function LocationSearchPage() {
   const [locationRequest, setLocationRequest] = useState<LocationSearchRequest | null>(null);
@@ -77,6 +77,10 @@ export default function LocationSearchPage() {
 
   const handlePlaceClick = (place: Place) => {
     setSelectedPlace(place);
+  };
+
+  const handleClosePopup = () => {
+    setSelectedPlace(null);
   };
 
   useKeyboardShortcuts([
@@ -187,6 +191,7 @@ export default function LocationSearchPage() {
                 radiusMiles={locationRequest?.radiusMiles}
                 onPlaceClick={handlePlaceClick}
                 selectedPlace={selectedPlace}
+                onClosePopup={handleClosePopup}
               />
             )}
 
@@ -295,61 +300,16 @@ export default function LocationSearchPage() {
               </div>
             )}
 
-            {/* Selected Place Details */}
-            {selectedPlace && (
-              <div className="card" style={{ 
-                border: '2px solid var(--primary-200)', 
-                background: 'var(--primary-50)',
-                padding: '1.5rem'
-              }}>
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-neutral-900 mb-2">
-                      📍 {selectedPlace.name}
-                    </h3>
-                    {selectedPlace.description && (
-                      <p className="text-neutral-700 mb-4 text-lg">{selectedPlace.description}</p>
-                    )}
-                    <div className="space-y-2 text-neutral-600">
-                      {selectedPlace.city && selectedPlace.state && (
-                        <p className="flex items-center gap-2">
-                          <span>🏢</span>
-                          {selectedPlace.city}, {selectedPlace.state}
-                        </p>
-                      )}
-                      {selectedPlace.phone && (
-                        <p className="flex items-center gap-2">
-                          <span>📞</span>
-                          {selectedPlace.phone}
-                        </p>
-                      )}
-                      {selectedPlace.email && (
-                        <p className="flex items-center gap-2">
-                          <span>✉️</span>
-                          {selectedPlace.email}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => setSelectedPlace(null)}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    ✕ Close
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* Enhanced Community Resource Section */}
+            <CommunityResourceSection
+              places={places}
+              onPlaceClick={handlePlaceClick}
+              selectedPlace={selectedPlace}
+              userLocation={userLocation || undefined}
+            />
           </div>
         )}
 
-        {/* Print Layout */}
-        <PrintLayout 
-          places={places} 
-          userLocation={userLocation || undefined} 
-          radiusMiles={locationRequest?.radiusMiles} 
-        />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from '@googlemaps/react-wrapper';
 import type { Place } from '../types';
+import MapPopup from './MapPopup';
 
 interface GoogleMapsProps {
   places: Place[];
@@ -10,6 +11,7 @@ interface GoogleMapsProps {
   onPlaceClick?: (place: Place) => void;
   selectedPlace?: Place | null;
   apiKey: string;
+  onClosePopup?: () => void;
 }
 
 interface MapComponentProps {
@@ -325,7 +327,8 @@ export default function GoogleMaps({
   radiusMiles,
   onPlaceClick,
   selectedPlace,
-  apiKey
+  apiKey,
+  onClosePopup
 }: GoogleMapsProps) {
   
   if (places.length === 0 && !userLocation) {
@@ -400,26 +403,13 @@ export default function GoogleMaps({
         </div>
       </div>
       
-      {/* Place details */}
-      {selectedPlace && (
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <h4 className="font-medium text-gray-900">{selectedPlace.name}</h4>
-          {selectedPlace.addressLine1 && (
-            <p className="text-sm text-gray-600 mt-1">{selectedPlace.addressLine1}</p>
-          )}
-          {selectedPlace.categories && selectedPlace.categories.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {selectedPlace.categories.map((category) => (
-                <span
-                  key={category.id}
-                  className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
-                >
-                  {category.name}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Map Popup */}
+      {selectedPlace && onClosePopup && (
+        <MapPopup
+          place={selectedPlace}
+          onClose={onClosePopup}
+          userLocation={userLocation}
+        />
       )}
     </div>
   );

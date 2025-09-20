@@ -9,6 +9,7 @@ interface PlacesMapProps {
   radiusMiles?: number;
   onPlaceClick?: (place: Place) => void;
   selectedPlace?: Place | null;
+  onClosePopup?: () => void;
 }
 
 export default function PlacesMap({
@@ -16,7 +17,8 @@ export default function PlacesMap({
   userLocation,
   radiusMiles,
   onPlaceClick,
-  selectedPlace
+  selectedPlace,
+  onClosePopup
 }: PlacesMapProps) {
 
   if (!isGoogleMapsConfigured()) {
@@ -52,6 +54,7 @@ export default function PlacesMap({
       onPlaceClick={onPlaceClick}
       selectedPlace={selectedPlace}
       apiKey={GOOGLE_MAPS_API_KEY}
+      onClosePopup={onClosePopup}
     />
   );
 }
