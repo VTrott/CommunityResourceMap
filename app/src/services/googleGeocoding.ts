@@ -20,6 +20,11 @@ export async function geocodeAddress(address: string, apiKey: string): Promise<G
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
     
     const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Google Geocoding API error: ${response.status} ${response.statusText}`);
+    }
+    
     const data = await response.json();
     
     if (data.status === 'OK' && data.results.length > 0) {
@@ -53,11 +58,21 @@ export async function geocodeAddress(address: string, apiKey: string): Promise<G
       };
     }
     
-    console.error('Geocoding failed:', data.status, data.error_message);
-    return null;
+    // Handle specific Google API error statuses
+    if (data.status === 'ZERO_RESULTS') {
+      throw new Error('No results found for the provided address');
+    } else if (data.status === 'OVER_QUERY_LIMIT') {
+      throw new Error('Geocoding quota exceeded');
+    } else if (data.status === 'REQUEST_DENIED') {
+      throw new Error('Geocoding request denied - check API key');
+    } else if (data.status === 'INVALID_REQUEST') {
+      throw new Error('Invalid geocoding request');
+    } else {
+      throw new Error(`Geocoding failed: ${data.status} - ${data.error_message || 'Unknown error'}`);
+    }
   } catch (error) {
-    console.error('Error geocoding address:', error);
-    return null;
+    console.error('Error geocoding address with Google:', error);
+    throw error; // Re-throw to allow fallback mechanism to work
   }
 }
 

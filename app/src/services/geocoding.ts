@@ -1,3 +1,6 @@
+import { GOOGLE_MAPS_API_KEY, isGoogleMapsConfigured } from '../config/maps';
+import { geocodeAddress as googleGeocodeAddress } from './googleGeocoding';
+
 export interface GeocodingResult {
   latitude: number;
   longitude: number;
@@ -40,11 +43,7 @@ async function rateLimitedRequest(url: string): Promise<unknown> {
   return response.json();
 }
 
-export async function geocodeAddress(address: string): Promise<GeocodingResult> {
-  if (!address || address.trim().length === 0) {
-    throw new Error('Address is required');
-  }
-
+async function geocodeWithNominatim(address: string): Promise<GeocodingResult> {
   const searchParams = new URLSearchParams({
     q: address.trim(),
     format: 'json',
@@ -55,24 +54,45 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
 
   const url = `${NOMINATIM_BASE_URL}?${searchParams.toString()}`;
   
-  try {
-    const results = await rateLimitedRequest(url) as any[];
-    
-    if (!results || results.length === 0) {
-      throw new Error('No results found for the provided address');
-    }
+  const results = await rateLimitedRequest(url) as any[];
+  
+  if (!results || results.length === 0) {
+    throw new Error('No results found for the provided address');
+  }
 
-    const result = results[0];
-    const addressDetails = result.address || {};
-    
-    return {
-      latitude: parseFloat(result.lat),
-      longitude: parseFloat(result.lon),
-      formattedAddress: result.display_name,
-      city: addressDetails.city || addressDetails.town || addressDetails.village,
-      state: addressDetails.state,
-      country: addressDetails.country,
-    };
+  const result = results[0];
+  const addressDetails = result.address || {};
+  
+  return {
+    latitude: parseFloat(result.lat),
+    longitude: parseFloat(result.lon),
+    formattedAddress: result.display_name,
+    city: addressDetails.city || addressDetails.town || addressDetails.village,
+    state: addressDetails.state,
+    country: addressDetails.country,
+  };
+}
+
+export async function geocodeAddress(address: string): Promise<GeocodingResult> {
+  if (!address || address.trim().length === 0) {
+    throw new Error('Address is required');
+  }
+
+  if (isGoogleMapsConfigured()) {
+    try {
+      const googleResult = await googleGeocodeAddress(address, GOOGLE_MAPS_API_KEY);
+      if (googleResult) {
+        return googleResult;
+      }
+    } catch (error) {
+      console.warn('Google Geocoding failed, falling back to Nominatim:', error);
+    }
+  }
+
+
+  try {
+    const nominatimResult = await geocodeWithNominatim(address);
+    return nominatimResult;
   } catch (error) {
     console.error('Error geocoding address:', error);
     throw new Error(`Failed to geocode address: ${error instanceof Error ? error.message : 'Unknown error'}`);
