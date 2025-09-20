@@ -42,7 +42,7 @@ vi.mock('../../services/api', () => ({
   },
 }));
 
-import { COMMUNITY_RESOURCE_SEARCHES, convertNominatimToPlace } from '../../services/nominatim';
+import { COMMUNITY_RESOURCE_SEARCHES } from '../../services/nominatim';
 import { api } from '../../services/api';
 
 describe('ImportPlaces', () => {

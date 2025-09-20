@@ -13,7 +13,7 @@ export default function CommunityResourceSection({
   places,
   onPlaceClick,
   selectedPlace,
-  userLocation
+  userLocation: _userLocation
 }: CommunityResourceSectionProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;

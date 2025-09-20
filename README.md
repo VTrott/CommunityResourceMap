@@ -48,7 +48,16 @@ A web application that helps people discover and access community resources in t
 - **UI Framework**: Tailwind CSS with custom component library
 - **Testing**: Vitest + Testing Library with comprehensive test coverage
 
-## Quick start (Docker Compose)
+## 🚀 Live Application
+
+**Your CommunityConnect application is live at:**
+- **Frontend**: https://communitiesresources.com
+- **API**: https://communitiesresources.com/api/
+- **Health Check**: https://communitiesresources.com/api/health
+
+## 🛠️ Local Development
+
+### Quick start (Docker Compose)
 Prereqs: Docker Desktop installed and running.
 
 ```bash
@@ -458,6 +467,27 @@ npm test              # run tests in watch mode
 npm run test:run      # run tests once
 ```
 
+## ☁️ AWS Deployment
+
+This application is deployed on AWS using Terraform with a cost-optimized free tier configuration:
+
+### Infrastructure
+- **ECS Fargate**: Containerized Spring Boot API and React frontend
+- **RDS PostgreSQL**: Managed database with automatic backups
+- **Application Load Balancer**: SSL termination and traffic routing
+- **Route 53**: DNS management for custom domain
+- **CloudWatch**: Monitoring, logging, and alerts
+- **ECR**: Container image registry
+
+### Cost Optimization
+- **Free Tier Eligible**: Designed to stay within AWS Free Tier limits
+- **Estimated Cost**: $0-15/month
+- **Auto Scaling**: Single instance configuration for cost efficiency
+- **Monitoring**: CloudWatch dashboard and alerts included
+
+### Deployment
+See [DEPLOY_FREE.md](DEPLOY_FREE.md) for complete deployment instructions.
+
 ## Roadmap (MVP → hardening)
 1) ✅ **Place CRUD + search** (city/state/name/text), pagination
 2) ✅ **Frontend UI/UX** - Modern design with Tailwind CSS, component library, responsive layout
@@ -465,9 +495,9 @@ npm run test:run      # run tests once
 4) ✅ **Categories Backend** - Full category CRUD endpoints and place-category relationships
 5) ✅ **Places Import** - OpenStreetMap integration for importing verified community resources
 6) ✅ **Location-Based Search** - Address geocoding, radius search, Google Maps with auto-zoom
-7) **Pre-signed S3 uploads** for images (LocalStack in dev)
-8) **Submissions + moderation flow**
-9) **Deploy to AWS** (ECS+ALB, RDS, S3+CloudFront)
+7) ✅ **AWS Deployment** - Production deployment with SSL, monitoring, and cost optimization
+8) **Pre-signed S3 uploads** for images (LocalStack in dev)
+9) **Submissions + moderation flow**
 10) **Perf tests, alerts, and security hardening**
 
 ## Current Status
@@ -487,5 +517,7 @@ npm run test:run      # run tests once
 - ✅ **Import System**: Bulk import from OpenStreetMap with category mapping
 - ✅ **Keyboard Shortcuts**: Power user features for enhanced productivity
 - ✅ **Print Support**: Print-friendly resource lists
+- ✅ **AWS Deployment**: Production deployment with SSL, monitoring, and cost optimization
+- ✅ **Live Application**: https://communitiesresources.com
 - 🔄 **Next**: Image uploads and submission workflow
 
