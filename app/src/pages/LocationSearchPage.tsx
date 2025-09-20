@@ -61,11 +61,13 @@ export default function LocationSearchPage() {
         const city = geocodingResult.city || searchRequest.address.split(',')[0]?.trim() || '';
         const state = geocodingResult.state || searchRequest.address.split(',')[1]?.trim() || '';
         
-        // Set the location request for the hook
+        // Set the location request for the hook with coordinates
         setLocationRequest({
           ...searchRequest,
           city,
           state,
+          latitude: geocodingResult.latitude,
+          longitude: geocodingResult.longitude,
         });
       } else {
         // Fallback to simple city/state search if geocoding fails
@@ -77,6 +79,9 @@ export default function LocationSearchPage() {
           ...searchRequest,
           city,
           state,
+          // Use default coordinates if geocoding fails
+          latitude: 40.7128,
+          longitude: -74.0060,
         });
       }
       

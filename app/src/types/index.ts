@@ -52,6 +52,8 @@ export type LocationSearchRequest = {
   categoryIds?: string[];
   city?: string;
   state?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type PlaceSearchResponse = {

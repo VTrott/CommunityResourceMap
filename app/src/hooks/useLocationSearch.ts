@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { COMMUNITY_RESOURCE_SEARCHES, convertNominatimToPlace } from '../services/nominatim';
-import type { LocationSearchRequest, PlaceSearchResponse, Place, Category } from '../types';
+import { searchCommunityResources } from '../services/placesApi';
+import type { LocationSearchRequest, PlaceSearchResponse, Place } from '../types';
 
 /**
- * Hook for searching community resources using OpenStreetMap/Nominatim API
+ * Hook for searching community resources using backend API
  */
 export function useLocationSearch(locationRequest: LocationSearchRequest | null) {
   return useQuery({
@@ -11,33 +11,22 @@ export function useLocationSearch(locationRequest: LocationSearchRequest | null)
     queryFn: async (): Promise<PlaceSearchResponse | null> => {
       if (!locationRequest) return null;
 
-      const city = locationRequest.city || '';
-      const state = locationRequest.state || '';
-
-      if (!city || !state) {
-        return createEmptyResponse();
-      }
+      // Use coordinates from the request, fallback to default if not provided
+      const location = { 
+        latitude: locationRequest.latitude || 40.7128, 
+        longitude: locationRequest.longitude || -74.0060 
+      };
 
       try {
-        // Search for different types of community resources in parallel
-        const [foodBanks, healthcare, shelters, communityCenters, libraries] = await Promise.all([
-          COMMUNITY_RESOURCE_SEARCHES.foodBanks(city, state),
-          COMMUNITY_RESOURCE_SEARCHES.healthcare(city, state),
-          COMMUNITY_RESOURCE_SEARCHES.shelters(city, state),
-          COMMUNITY_RESOURCE_SEARCHES.communityCenters(city, state),
-          COMMUNITY_RESOURCE_SEARCHES.libraries(city, state)
-        ]);
+        // Search for community resources using backend API
+        const places = await searchCommunityResources({
+          latitude: location.latitude,
+          longitude: location.longitude,
+          radiusMiles: locationRequest.radiusMiles,
+          categoryIds: locationRequest.categoryIds
+        });
 
-        // Convert all results to places and combine
-        const allPlaces: Place[] = [
-          ...foodBanks,
-          ...healthcare,
-          ...shelters,
-          ...communityCenters,
-          ...libraries
-        ].map(convertNominatimToPlace).map(convertToPlace);
-
-        return createSearchResponse(allPlaces);
+        return createSearchResponse(places);
 
       } catch (error) {
         console.error('Error searching places:', error);
@@ -49,36 +38,7 @@ export function useLocationSearch(locationRequest: LocationSearchRequest | null)
   });
 }
 
-/**
- * Convert Nominatim place to our Place type
- */
-function convertToPlace(place: Record<string, unknown>): Place {
-  return {
-    ...place,
-    id: (place.id as string) || generateId(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    categories: ((place.categories as string[]) || []).map(convertToCategory)
-  } as Place;
-}
 
-/**
- * Convert category name to Category object
- */
-function convertToCategory(categoryName: string): Category {
-  return {
-    id: generateId(),
-    name: categoryName,
-    slug: categoryName.toLowerCase().replace(/\s+/g, '-')
-  };
-}
-
-/**
- * Generate a random ID
- */
-function generateId(): string {
-  return Math.random().toString(36).substr(2, 9);
-}
 
 /**
  * Create empty search response

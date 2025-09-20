@@ -11,8 +11,11 @@ interface LocationSearchProps {
 }
 
 export default function LocationSearch({ onSearch, loading = false, onClear }: LocationSearchProps) {
-  const [address, setAddress] = useState('');
-  const [radiusMiles, setRadiusMiles] = useState(15);
+  const [streetAddress, setStreetAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zipCode, setZipCode] = useState('');
+  const [radiusMiles, setRadiusMiles] = useState(10);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [geocodingError, setGeocodingError] = useState<string | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -22,8 +25,8 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
 
   const handleGeocode = async () => {
-    if (!address.trim()) {
-      setGeocodingError('Please enter an address');
+    if (!streetAddress.trim() || !city.trim() || !state.trim()) {
+      setGeocodingError('Please enter street address, city, and state');
       return;
     }
 
@@ -32,7 +35,9 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
     setGeocodedLocation(null);
 
     try {
-      const result = await geocodeAddress(address);
+      // Construct full address from separate fields
+      const fullAddress = `${streetAddress}, ${city}, ${state}${zipCode ? `, ${zipCode}` : ''}`;
+      const result = await geocodeAddress(fullAddress);
       setGeocodedLocation(result);
     } catch (error) {
       setGeocodingError(error instanceof Error ? error.message : 'Failed to geocode address');
@@ -64,7 +69,20 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
       
       const result = await geocodeAddress(`${latitude}, ${longitude}`);
       setGeocodedLocation(result);
-      setAddress(result.formattedAddress);
+      
+      const addressParts = result.formattedAddress.split(',');
+      if (addressParts.length >= 3) {
+        setStreetAddress(addressParts[0].trim());
+        setCity(addressParts[1].trim());
+        const stateZipPart = addressParts[2].trim();
+        const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+        if (stateZipMatch) {
+          setState(stateZipMatch[1]);
+          setZipCode(stateZipMatch[2]);
+        } else {
+          setState(stateZipPart);
+        }
+      }
     } catch (error) {
       if (error instanceof GeolocationPositionError) {
         switch (error.code) {
@@ -94,16 +112,26 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
       return;
     }
 
+    // Construct full address for the search request
+    const fullAddress = `${streetAddress}, ${city}, ${state}${zipCode ? `, ${zipCode}` : ''}`;
+
     onSearch({
-      address,
+      address: fullAddress,
       radiusMiles,
       categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+      city,
+      state,
+      latitude: geocodedLocation.latitude,
+      longitude: geocodedLocation.longitude,
     });
   };
 
   const handleClear = () => {
-    setAddress('');
-    setRadiusMiles(15);
+    setStreetAddress('');
+    setCity('');
+    setState('');
+    setZipCode('');
+    setRadiusMiles(10);
     setSelectedCategoryIds([]);
     setGeocodingError(null);
     setGeocodedLocation(null);
@@ -121,26 +149,77 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
 
   return (
     <div className="card p-8">
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {/* Address Input */}
-        <div>
-          <label htmlFor="address" className="block text-lg font-semibold text-neutral-700 mb-3">
-            🏠 Enter your address
+        <div style={{ marginBottom: '2rem' }}>
+          <label style={{ display: 'block', fontSize: '1.125rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+            Enter your address
           </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label htmlFor="streetAddress" className="block text-sm font-medium text-neutral-700 mb-2">
+                Street Address
+              </label>
+              <input
+                id="streetAddress"
+                type="text"
+                value={streetAddress}
+                onChange={(e) => setStreetAddress(e.target.value)}
+                placeholder="e.g., 123 Main St"
+                className="input w-full"
+                disabled={loading || isGeocoding || isGettingLocation}
+              />
+            </div>
+            <div>
+              <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-2">
+                City
+              </label>
+              <input
+                id="city"
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g., Springfield"
+                className="input w-full"
+                disabled={loading || isGeocoding || isGettingLocation}
+              />
+            </div>
+            <div>
+              <label htmlFor="state" className="block text-sm font-medium text-neutral-700 mb-2">
+                State
+              </label>
+              <input
+                id="state"
+                type="text"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="e.g., IL"
+                className="input w-full"
+                disabled={loading || isGeocoding || isGettingLocation}
+                maxLength={2}
+              />
+            </div>
+            <div>
+              <label htmlFor="zipCode" className="block text-sm font-medium text-neutral-700 mb-2">
+                Zip Code
+              </label>
+              <input
+                id="zipCode"
+                type="text"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value)}
+                placeholder="e.g., 62701"
+                className="input w-full"
+                disabled={loading || isGeocoding || isGettingLocation}
+                maxLength={10}
+              />
+            </div>
+          </div>
           <div className="flex gap-3">
-            <input
-              id="address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="e.g., 123 Main St, City, State"
-              className="input flex-1"
-              disabled={loading || isGeocoding || isGettingLocation}
-            />
             <Button
               onClick={handleGeocode}
               loading={isGeocoding}
-              disabled={!address.trim() || loading || isGettingLocation}
+              disabled={!streetAddress.trim() || !city.trim() || !state.trim() || loading || isGettingLocation}
               variant="secondary"
             >
               🔍 Find Location
@@ -169,59 +248,217 @@ export default function LocationSearch({ onSearch, loading = false, onClear }: L
           )}
         </div>
 
+        {/* Category Selection */}
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <label style={{ fontSize: '1.125rem', fontWeight: '600', color: '#111827' }}>
+              Filter Categories
+            </label>
+            {selectedCategoryIds.length > 0 && (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem', 
+                padding: '0.25rem 0.75rem', 
+                backgroundColor: 'var(--accent-50)', 
+                borderRadius: '9999px',
+                border: '1px solid var(--accent-200)'
+              }}>
+                <span style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--accent-700)' }}>
+                  {selectedCategoryIds.length} selected
+                </span>
+              </div>
+            )}
+          </div>
+          
+          {categoriesLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  border: '2px solid var(--primary-500)',
+                  borderTopColor: 'transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                <span style={{ fontSize: '0.875rem', color: '#737373' }}>Loading categories...</span>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                gap: '0.75rem',
+                marginBottom: '1rem'
+              }}>
+                {categories.map((category) => (
+                  <label
+                    key={category.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e5e5',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: selectedCategoryIds.includes(category.id) 
+                        ? 'var(--accent-50)' 
+                        : 'rgba(255, 255, 255, 0.8)',
+                      backdropFilter: 'blur(8px)',
+                      borderColor: selectedCategoryIds.includes(category.id) 
+                        ? 'var(--accent-200)' 
+                        : '#e5e5e5'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!selectedCategoryIds.includes(category.id)) {
+                        const target = e.target as HTMLLabelElement;
+                        target.style.backgroundColor = 'var(--primary-50)';
+                        target.style.borderColor = 'var(--primary-300)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!selectedCategoryIds.includes(category.id)) {
+                        const target = e.target as HTMLLabelElement;
+                        target.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                        target.style.borderColor = '#e5e5e5';
+                      }
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategoryIds.includes(category.id)}
+                      onChange={() => toggleCategory(category.id)}
+                      disabled={loading}
+                      style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1 }}>
+                      <div style={{
+                        flexShrink: 0,
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '4px',
+                        border: '2px solid',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: '0.75rem',
+                        transition: 'all 0.2s ease',
+                        backgroundColor: selectedCategoryIds.includes(category.id) 
+                          ? 'var(--accent-500)' 
+                          : 'white',
+                        borderColor: selectedCategoryIds.includes(category.id) 
+                          ? 'var(--accent-500)' 
+                          : '#d4d4d4',
+                        color: selectedCategoryIds.includes(category.id) ? 'white' : 'transparent'
+                      }}>
+                        {selectedCategoryIds.includes(category.id) && (
+                          <svg style={{ width: '12px', height: '12px' }} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      <span style={{ 
+                        fontSize: '0.875rem', 
+                        fontWeight: '500', 
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        color: selectedCategoryIds.includes(category.id) 
+                          ? 'var(--accent-800)' 
+                          : '#374151'
+                      }}>
+                        {category.name}
+                      </span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              
+              {selectedCategoryIds.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                  <p style={{ fontSize: '0.875rem', color: '#737373' }}>Select categories to filter results (optional)</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Radius Selection */}
-        <div>
-          <label className="block text-lg font-semibold text-neutral-700 mb-3">
-            📏 Search radius
-          </label>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <label style={{ fontSize: '1.125rem', fontWeight: '600', color: '#111827' }}>
+              Search Radius
+            </label>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              padding: '0.25rem 0.75rem', 
+              backgroundColor: 'var(--primary-50)', 
+              borderRadius: '9999px',
+              border: '1px solid var(--primary-200)'
+            }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--primary-700)' }}>Selected:</span>
+              <span style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--primary-600)' }}>{radiusMiles} miles</span>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
             {RADIUS_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setRadiusMiles(option.value)}
-                className={`px-4 py-3 text-sm font-medium rounded-xl border transition-all duration-200 ${
-                  radiusMiles === option.value
-                    ? 'bg-primary-600 text-white border-primary-600 shadow-soft'
-                    : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50 hover:shadow-soft'
-                }`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0.625rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  borderRadius: '9999px',
+                  transition: 'all 0.2s ease',
+                  border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                  ...(radiusMiles === option.value
+                    ? {
+                        background: 'linear-gradient(135deg, var(--primary-500), var(--primary-600))',
+                        color: 'white',
+                        boxShadow: '0 4px 14px 0 rgba(14, 165, 233, 0.2)'
+                      }
+                    : {
+                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                        backdropFilter: 'blur(8px)',
+                        color: '#374151',
+                        border: '1px solid #e5e5e5'
+                      })
+                }}
+                onMouseEnter={(e) => {
+                  if (loading) return;
+                  if (radiusMiles !== option.value) {
+                    const target = e.target as HTMLButtonElement;
+                    target.style.backgroundColor = 'var(--primary-50)';
+                    target.style.borderColor = 'var(--primary-300)';
+                    target.style.color = 'var(--primary-700)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (loading) return;
+                  if (radiusMiles !== option.value) {
+                    const target = e.target as HTMLButtonElement;
+                    target.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                    target.style.borderColor = '#e5e5e5';
+                    target.style.color = '#374151';
+                  }
+                }}
                 disabled={loading}
               >
                 {option.label}
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Category Selection */}
-        <div>
-          <label className="block text-lg font-semibold text-neutral-700 mb-3">
-            🏷️ Filter by category (optional)
-          </label>
-          {categoriesLoading ? (
-            <p className="text-neutral-500">Loading categories...</p>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => toggleCategory(category.id)}
-                  className={`px-4 py-2 text-sm font-medium rounded-full border transition-all duration-200 ${
-                    selectedCategoryIds.includes(category.id)
-                      ? 'bg-primary-100 text-primary-800 border-primary-300 shadow-soft'
-                      : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50 hover:shadow-soft'
-                  }`}
-                  disabled={loading}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
-          )}
-          {selectedCategoryIds.length > 0 && (
-            <p className="mt-2 text-sm text-neutral-600">
-              {selectedCategoryIds.length} categor{selectedCategoryIds.length === 1 ? 'y' : 'ies'} selected
-            </p>
-          )}
         </div>
 
         {/* Action Buttons */}

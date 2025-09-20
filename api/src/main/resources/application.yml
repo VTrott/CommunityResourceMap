@@ -30,3 +30,8 @@ logging:
   level:
     org.springframework: INFO
 
+google:
+  maps:
+    api:
+      key: ${GOOGLE_MAPS_API_KEY:}
+
