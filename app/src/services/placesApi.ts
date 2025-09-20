@@ -70,7 +70,8 @@ export async function searchCommunityResources(params: PlaceSearchParams): Promi
   
   const requestBody = {
     latitude: params.latitude,
-    longitude: params.longitude
+    longitude: params.longitude,
+    categoryIds: params.categoryIds
   };
   
   const response = await fetch(url, {

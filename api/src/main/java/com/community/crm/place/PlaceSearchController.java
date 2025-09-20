@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClientException;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.lang.Math;
 
 @RestController
 @RequestMapping("/api/places")
@@ -131,7 +132,9 @@ public class PlaceSearchController {
             try {
                 double latitude = Double.parseDouble(request.get("latitude").toString());
                 double longitude = Double.parseDouble(request.get("longitude").toString());
-                return searchWithRadius(5, latitude, longitude);
+                @SuppressWarnings("unchecked")
+                List<String> categoryIds = (List<String>) request.get("categoryIds");
+                return searchWithRadius(5, latitude, longitude, categoryIds);
             } catch (Exception e) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid coordinates");
@@ -145,7 +148,9 @@ public class PlaceSearchController {
             try {
                 double latitude = Double.parseDouble(request.get("latitude").toString());
                 double longitude = Double.parseDouble(request.get("longitude").toString());
-                return searchWithRadius(10, latitude, longitude);
+                @SuppressWarnings("unchecked")
+                List<String> categoryIds = (List<String>) request.get("categoryIds");
+                return searchWithRadius(10, latitude, longitude, categoryIds);
             } catch (Exception e) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid coordinates");
@@ -159,7 +164,9 @@ public class PlaceSearchController {
             try {
                 double latitude = Double.parseDouble(request.get("latitude").toString());
                 double longitude = Double.parseDouble(request.get("longitude").toString());
-                return searchWithRadius(25, latitude, longitude);
+                @SuppressWarnings("unchecked")
+                List<String> categoryIds = (List<String>) request.get("categoryIds");
+                return searchWithRadius(25, latitude, longitude, categoryIds);
             } catch (Exception e) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid coordinates");
@@ -173,7 +180,9 @@ public class PlaceSearchController {
             try {
                 double latitude = Double.parseDouble(request.get("latitude").toString());
                 double longitude = Double.parseDouble(request.get("longitude").toString());
-                return searchWithRadius(50, latitude, longitude);
+                @SuppressWarnings("unchecked")
+                List<String> categoryIds = (List<String>) request.get("categoryIds");
+                return searchWithRadius(50, latitude, longitude, categoryIds);
             } catch (Exception e) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Invalid coordinates");
@@ -182,7 +191,7 @@ public class PlaceSearchController {
             }
         }
         
-        private ResponseEntity<Map<String, Object>> searchWithRadius(int radiusMiles, double latitude, double longitude) {
+        private ResponseEntity<Map<String, Object>> searchWithRadius(int radiusMiles, double latitude, double longitude, List<String> categoryIds) {
             System.out.println("=== SEARCH WITH RADIUS: " + radiusMiles + " MILES ===");
             System.out.println("Using coordinates: " + latitude + ", " + longitude);
             
@@ -220,7 +229,20 @@ public class PlaceSearchController {
                 for (Map<String, Object> googlePlace : allPlaces) {
                     try {
                         Map<String, Object> convertedPlace = convertGooglePlaceToPlace(googlePlace);
-                        convertedPlaces.add(convertedPlace);
+                        
+                        Double placeLat = (Double) convertedPlace.get("latitude");
+                        Double placeLng = (Double) convertedPlace.get("longitude");
+                        
+                        if (placeLat != null && placeLng != null) {
+                            double distance = calculateDistance(latitude, longitude, placeLat, placeLng);
+                            convertedPlace.put("distance", Math.round(distance * 10) / 10.0);
+                            
+                            if (distance <= radiusMiles) {
+                                if (categoryIds == null || categoryIds.isEmpty() || matchesCategoryFilter(convertedPlace, categoryIds)) {
+                                    convertedPlaces.add(convertedPlace);
+                                }
+                            }
+                        }
                     } catch (Exception e) {
                         System.err.println("Error converting place: " + e.getMessage());
                         e.printStackTrace();
@@ -393,5 +415,38 @@ public class PlaceSearchController {
                 return category;
             })
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Calculate distance between two points using Haversine formula
+     */
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 3959; // Earth's radius in miles
+        
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    /**
+     * Check if a place matches the category filter
+     */
+    private boolean matchesCategoryFilter(Map<String, Object> place, List<String> categoryIds) {
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> categories = (List<Map<String, Object>>) place.get("categories");
+        
+        if (categories == null || categories.isEmpty()) {
+            return false;
+        }
+        
+        Set<String> placeCategoryIds = categories.stream()
+                .map(cat -> cat.get("id").toString())
+                .collect(Collectors.toSet());
+        
+        return categoryIds.stream().anyMatch(placeCategoryIds::contains);
     }
 }
