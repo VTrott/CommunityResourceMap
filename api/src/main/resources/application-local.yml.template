@@ -1,0 +1,33 @@
+# Template for application-local.yml
+# Copy this file to application-local.yml and fill in your actual values
+
+spring:
+  profiles:
+    active: local
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+
+app:
+  external-apis:
+    google-maps:
+      api-key: ${GOOGLE_MAPS_API_KEY:your-google-maps-api-key-here}
+      base-url: ${GOOGLE_MAPS_BASE_URL:https://maps.googleapis.com/maps/api/place/textsearch/json}
+    google-service-account:
+      path: ${GOOGLE_SERVICE_ACCOUNT_PATH:path-to-your-service-account-json-file}
+      scopes: ${GOOGLE_SERVICE_ACCOUNT_SCOPES:https://www.googleapis.com/auth/cloud-platform}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
