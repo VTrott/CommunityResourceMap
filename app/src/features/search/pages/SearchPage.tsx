@@ -45,6 +45,7 @@ const SearchPage: React.FC = () => {
 
     try {
       const searchRequest: PlaceSearchRequest = {
+        query: searchData.searchQuery || 'community resources',
         latitude: searchData.latitude,
         longitude: searchData.longitude,
         radiusMiles: searchData.radius,

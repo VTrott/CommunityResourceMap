@@ -29,12 +29,9 @@ export interface Category {
 }
 
 export interface PlaceSearchRequest {
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  latitude?: number;
-  longitude?: number;
+  query: string;
+  latitude: number;
+  longitude: number;
   radiusMiles?: number;
   categoryIds?: string[];
 }

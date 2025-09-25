@@ -50,9 +50,10 @@ export interface Category {
 }
 
 export interface PlaceSearchRequest {
+  query: string;
   latitude: number;
   longitude: number;
-  radiusMiles: number;
+  radiusMiles?: number;
   categoryIds?: string[];
 }
 
@@ -199,7 +200,7 @@ export const placesApi = {
   getAll: (): Promise<Place[]> => 
     Promise.resolve([]),
 
-  getById: (id: string): Promise<Place> => 
+  getById: (_id: string): Promise<Place> => 
     Promise.resolve({} as Place),
 
   searchWithRadius: async (radiusMiles: number, request: PlaceSearchRequest): Promise<PlaceSearchResponse> => {
@@ -245,10 +246,10 @@ export const eventsApi = {
   getAll: (): Promise<Event[]> => 
     Promise.resolve([]),
 
-  getById: (id: string): Promise<Event> => 
+  getById: (_id: string): Promise<Event> => 
     Promise.resolve({} as Event),
 
-  search: (request: EventSearchRequest): Promise<EventSearchResponse> =>
+  search: (_request: EventSearchRequest): Promise<EventSearchResponse> =>
     Promise.resolve({
       events: [],
       totalElements: 0,
@@ -259,13 +260,13 @@ export const eventsApi = {
 };
 
 export const userProfilesApi = {
-  getByExternalId: (externalId: string, provider: string): Promise<UserProfile> =>
+  getByExternalId: (_externalId: string, _provider: string): Promise<UserProfile> =>
     Promise.resolve({} as UserProfile),
 
-  create: (request: CreateUserProfileRequest): Promise<UserProfile> =>
+  create: (_request: CreateUserProfileRequest): Promise<UserProfile> =>
     Promise.resolve({} as UserProfile),
 
-  update: (id: string, request: Partial<CreateUserProfileRequest>): Promise<UserProfile> =>
+  update: (_id: string, _request: Partial<CreateUserProfileRequest>): Promise<UserProfile> =>
     Promise.resolve({} as UserProfile),
 };
 
