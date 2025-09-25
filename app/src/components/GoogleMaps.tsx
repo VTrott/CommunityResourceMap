@@ -1,416 +1,279 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Wrapper, Status } from '@googlemaps/react-wrapper';
 import type { Place } from '../types';
-import MapPopup from './MapPopup';
 
 interface GoogleMapsProps {
+  center: { lat: number; lng: number };
+  zoom: number;
   places: Place[];
-  userLocation?: { latitude: number; longitude: number };
-  searchCenter?: { latitude: number; longitude: number };
-  radiusMiles?: number;
-  onPlaceClick?: (place: Place) => void;
   selectedPlace?: Place | null;
-  apiKey: string;
-  onClosePopup?: () => void;
+  onPlaceSelect?: (place: Place) => void;
+  searchLocation?: { lat: number; lng: number; address: string };
+  radiusMiles?: number;
 }
 
 interface MapComponentProps {
+  center: { lat: number; lng: number };
+  zoom: number;
   places: Place[];
-  userLocation?: { latitude: number; longitude: number };
-  searchCenter?: { latitude: number; longitude: number };
-  radiusMiles?: number;
-  onPlaceClick?: (place: Place) => void;
   selectedPlace?: Place | null;
+  onPlaceSelect?: (place: Place) => void;
+  searchLocation?: { lat: number; lng: number; address: string };
+  radiusMiles?: number;
 }
 
-// Category colors matching the original implementation
-const getCategoryColor = (place: Place) => {
-  if (!place.categories || place.categories.length === 0) return '#6B7280';
-  
-  const categoryColors: Record<string, string> = {
-    'Food Assistance': '#EF4444',
-    'Healthcare': '#10B981',
-    'Housing': '#F59E0B',
-    'Legal Aid': '#8B5CF6',
-    'Family Services': '#EC4899',
-    'Employment': '#06B6D4',
-    'Education': '#84CC16'
-  };
-
-  return categoryColors[place.categories[0].name] || '#6B7280';
-};
-
-function MapComponent({
+const MapComponent: React.FC<MapComponentProps> = ({
+  center,
+  zoom,
   places,
-  userLocation,
-  searchCenter,
-  radiusMiles,
-  onPlaceClick,
-  selectedPlace
-}: MapComponentProps) {
+  selectedPlace,
+  onPlaceSelect,
+  searchLocation,
+  radiusMiles = 10
+}) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
-  const [userMarker, setUserMarker] = useState<google.maps.Marker | null>(null);
-  const [searchMarker, setSearchMarker] = useState<google.maps.Marker | null>(null);
-  const [circle, setCircle] = useState<google.maps.Circle | null>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const circleRef = useRef<google.maps.Circle | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || map) return;
+    if (!mapRef.current || mapInstanceRef.current) return;
 
-    try {
-      let center = { lat: 40.7128, lng: -74.0060 }; 
-      let zoom = 12;
-      
-      if (searchCenter) {
-        center = { lat: searchCenter.latitude, lng: searchCenter.longitude };
-        zoom = 13;
-      } else if (userLocation) {
-        center = { lat: userLocation.latitude, lng: userLocation.longitude };
-        zoom = 12;
-      } else if (places.length > 0 && places[0].latitude && places[0].longitude) {
-        center = { lat: places[0].latitude, lng: places[0].longitude };
-        zoom = 12;
-      }
-
-      const mapInstance = new google.maps.Map(mapRef.current, {
-        zoom,
-        center,
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'on' }]
-          }
-        ]
-      });
-
-      setMap(mapInstance);
-    } catch (error) {
-      console.error('Error initializing Google Maps:', error);
-    }
-  }, [map, places, userLocation, searchCenter]);
-
-  // Update markers when places change
-  useEffect(() => {
-    if (!map) return;
-
-    // Clear existing markers
-    markers.forEach(marker => marker.setMap(null));
-    setMarkers([]);
-
-    // Add new markers for places
-    const newMarkers = places
-      .filter(place => place.latitude !== undefined && place.longitude !== undefined)
-      .map(place => {
-        const marker = new google.maps.Marker({
-          position: { lat: place.latitude!, lng: place.longitude! },
-          map,
-          title: place.name,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 12,
-            fillColor: getCategoryColor(place),
-            fillOpacity: 1,
-            strokeColor: 'white',
-            strokeWeight: 2
-          }
-        });
-
-        marker.addListener('click', () => {
-          onPlaceClick?.(place);
-        });
-
-        return marker;
-      });
-
-    setMarkers(newMarkers);
-  }, [map, places, onPlaceClick]);
-
-  // Update user location marker
-  useEffect(() => {
-    if (!map || !userLocation) {
-      if (userMarker) {
-        userMarker.setMap(null);
-        setUserMarker(null);
-      }
-      return;
-    }
-
-
-    if (userMarker) {
-      userMarker.setMap(null);
-    }
-
-    const newUserMarker = new google.maps.Marker({
-      position: { lat: userLocation.latitude, lng: userLocation.longitude },
-      map,
-      title: 'Your Location',
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 16,
-        fillColor: '#3B82F6',
-        fillOpacity: 1,
-        strokeColor: 'white',
-        strokeWeight: 3
-      }
+    mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+      center,
+      zoom,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      styles: [
+        {
+          featureType: 'poi',
+          elementType: 'labels',
+          stylers: [{ visibility: 'off' }]
+        }
+      ]
     });
+  }, [center, zoom]);
 
-    setUserMarker(newUserMarker);
-  }, [map, userLocation]);
-
-  // Update search center marker
+  // Auto-zoom to fit all places
   useEffect(() => {
-    if (!map || !searchCenter) {
-      if (searchMarker) {
-        searchMarker.setMap(null);
-        setSearchMarker(null);
-      }
-      return;
-    }
-
-    // Remove existing search marker
-    if (searchMarker) {
-      searchMarker.setMap(null);
-    }
-
-    // Add new search marker
-    const newSearchMarker = new google.maps.Marker({
-      position: { lat: searchCenter.latitude, lng: searchCenter.longitude },
-      map,
-      title: 'Search Location',
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 14,
-        fillColor: '#10B981',
-        fillOpacity: 1,
-        strokeColor: 'white',
-        strokeWeight: 3
-      }
-    });
-
-    setSearchMarker(newSearchMarker);
-  }, [map, searchCenter]);
-
-  // Update radius circle
-  useEffect(() => {
-    const centerLocation = searchCenter || userLocation;
-    if (!map || !centerLocation || !radiusMiles) {
-      if (circle) {
-        circle.setMap(null);
-        setCircle(null);
-      }
-      return;
-    }
-
-    // Remove existing circle
-    if (circle) {
-      circle.setMap(null);
-    }
-
-    // Add new circle
-    const newCircle = new google.maps.Circle({
-      strokeColor: searchCenter ? '#10B981' : '#3B82F6',
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      fillColor: searchCenter ? '#10B981' : '#3B82F6',
-      fillOpacity: 0.1,
-      map,
-      center: { lat: centerLocation.latitude, lng: centerLocation.longitude },
-      radius: radiusMiles * 1609.34 // Convert miles to meters
-    });
-
-    setCircle(newCircle);
-  }, [map, userLocation, searchCenter, radiusMiles]);
-
-  // Update map bounds to fit all markers
-  useEffect(() => {
-    if (!map || (places.length === 0 && !userLocation && !searchCenter)) return;
+    if (!mapInstanceRef.current || places.length === 0) return;
 
     const bounds = new google.maps.LatLngBounds();
-    
-    // Add search center to bounds (highest priority)
-    if (searchCenter) {
-      bounds.extend({ lat: searchCenter.latitude, lng: searchCenter.longitude });
-    }
-    
-    // Add user location to bounds
-    if (userLocation) {
-      bounds.extend({ lat: userLocation.latitude, lng: userLocation.longitude });
+    let hasValidPlaces = false;
+
+    // Add search location to bounds if available
+    if (searchLocation) {
+      bounds.extend(new google.maps.LatLng(searchLocation.lat, searchLocation.lng));
+      hasValidPlaces = true;
     }
 
-    // Add places to bounds
-    places
-      .filter(place => place.latitude !== undefined && place.longitude !== undefined)
-      .forEach(place => {
-        bounds.extend({ lat: place.latitude!, lng: place.longitude! });
+    // Add all places to bounds
+    places.forEach(place => {
+      if (place.latitude && place.longitude) {
+        bounds.extend(new google.maps.LatLng(place.latitude, place.longitude));
+        hasValidPlaces = true;
+      }
+    });
+
+    // Only auto-zoom if we have valid places
+    if (hasValidPlaces) {
+      mapInstanceRef.current.fitBounds(bounds);
+      
+      // Set a minimum zoom level to prevent zooming in too much
+      const listener = google.maps.event.addListener(mapInstanceRef.current, 'bounds_changed', () => {
+        if (mapInstanceRef.current) {
+          const currentZoom = mapInstanceRef.current.getZoom();
+          if (currentZoom && currentZoom > 15) {
+            mapInstanceRef.current.setZoom(15);
+          }
+        }
+        google.maps.event.removeListener(listener);
       });
-
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds);
     }
-  }, [map, places, userLocation, searchCenter]);
+  }, [places, searchLocation]);
 
-  // Highlight selected place
+  // Clear existing markers
+  const clearMarkers = () => {
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+  };
+
+  // Add search location marker
   useEffect(() => {
-    if (!map || !selectedPlace || markers.length === 0) return;
+    if (!mapInstanceRef.current || !searchLocation) return;
 
-    const selectedMarker = markers.find(marker => 
-      marker.getTitle() === selectedPlace.name
-    );
+    const searchMarker = new google.maps.Marker({
+      position: { lat: searchLocation.lat, lng: searchLocation.lng },
+      map: mapInstanceRef.current,
+      title: `Search Location: ${searchLocation.address}`,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: '#10B981',
+        fillOpacity: 1,
+        strokeColor: '#FFFFFF',
+        strokeWeight: 2,
+      },
+      zIndex: 1000
+    });
 
-    if (selectedMarker) {
-      // Reset all markers to normal size
-      markers.forEach(marker => {
-        const place = places.find(p => p.name === marker.getTitle());
-        if (place) {
-          marker.setIcon({
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 12,
-            fillColor: getCategoryColor(place),
-            fillOpacity: 1,
-            strokeColor: 'white',
-            strokeWeight: 2
-          });
+    return () => {
+      searchMarker.setMap(null);
+    };
+  }, [searchLocation]);
+
+  // Add radius circle
+  useEffect(() => {
+    if (!mapInstanceRef.current || !searchLocation) return;
+
+    if (circleRef.current) {
+      circleRef.current.setMap(null);
+    }
+
+    circleRef.current = new google.maps.Circle({
+      strokeColor: '#10B981',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#10B981',
+      fillOpacity: 0.1,
+      map: mapInstanceRef.current,
+      center: { lat: searchLocation.lat, lng: searchLocation.lng },
+      radius: radiusMiles * 1609.34, // Convert miles to meters
+    });
+
+    return () => {
+      if (circleRef.current) {
+        circleRef.current.setMap(null);
+      }
+    };
+  }, [searchLocation, radiusMiles]);
+
+  // Add place markers
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    clearMarkers();
+
+    places.forEach(place => {
+      if (!place.latitude || !place.longitude) return;
+
+      const marker = new google.maps.Marker({
+        position: { lat: place.latitude, lng: place.longitude },
+        map: mapInstanceRef.current,
+        title: place.name,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 6,
+          fillColor: selectedPlace?.id === place.id ? '#EF4444' : '#3B82F6',
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 2,
         }
       });
 
-      selectedMarker.setIcon({
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 16,
-        fillColor: getCategoryColor(selectedPlace),
-        fillOpacity: 1,
-        strokeColor: 'white',
-        strokeWeight: 3
-      });
-    }
-  }, [map, selectedPlace, markers, places]);
+      if (onPlaceSelect) {
+        marker.addListener('click', () => {
+          onPlaceSelect(place);
+        });
+      }
 
-  return <div ref={mapRef} className="w-full h-[400px] rounded-lg" style={{ minHeight: '400px' }} />;
-}
+      markersRef.current.push(marker);
+    });
 
-const render = (status: Status) => {
+    return () => {
+      clearMarkers();
+    };
+  }, [places, selectedPlace, onPlaceSelect]);
+
+  return <div ref={mapRef} className="w-full h-full rounded-lg" />;
+};
+
+const render = (status: Status): React.ReactElement => {
   switch (status) {
     case Status.LOADING:
       return (
-        <div className="bg-gray-100 rounded-lg p-8 text-center min-h-[400px] flex flex-col items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600">Loading map...</p>
+        <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+          <div className="text-center">
+            <div className="spinner"></div>
+            <p style={{ color: 'var(--gray-600)', marginTop: '0.5rem' }}>Loading map...</p>
+          </div>
         </div>
       );
     case Status.FAILURE:
       return (
-        <div className="bg-red-50 rounded-lg p-8 text-center min-h-[400px] flex flex-col items-center justify-center">
-          <div className="text-red-500 mb-4">
-            <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+        <div className="flex items-center justify-center h-96 bg-red-50 rounded-lg">
+          <div className="text-center">
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
+            <p style={{ color: 'var(--error-500)' }}>Failed to load map</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--gray-500)', marginTop: '0.25rem' }}>
+              Please check your internet connection
+            </p>
           </div>
-          <h3 className="text-xl font-semibold text-red-900 mb-2">Map Error</h3>
-          <p className="text-red-600">Failed to load Google Maps. Please check your API key.</p>
         </div>
       );
     default:
-      return (
-        <div className="bg-gray-100 rounded-lg p-8 text-center min-h-[400px] flex flex-col items-center justify-center">
-          <p className="text-gray-600">Initializing map...</p>
-        </div>
-      );
+      return <div></div>;
   }
 };
 
-export default function GoogleMaps({
-  places,
-  userLocation,
-  searchCenter,
-  radiusMiles,
-  onPlaceClick,
-  selectedPlace,
-  apiKey,
-  onClosePopup
-}: GoogleMapsProps) {
-  
-  if (places.length === 0 && !userLocation) {
+const GoogleMaps: React.FC<GoogleMapsProps> = (props) => {
+  const [apiKey, setApiKey] = useState<string>('');
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+
+  useEffect(() => {
+    // Get the API key from environment variables
+    const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+    setApiKey(key);
+
+    if (key) {
+      // Load Google Maps script dynamically
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setScriptLoaded(true);
+      script.onerror = () => setScriptLoaded(false);
+      document.head.appendChild(script);
+
+      return () => {
+        // Cleanup script on unmount
+        const existingScript = document.querySelector(`script[src*="maps.googleapis.com"]`);
+        if (existingScript) {
+          document.head.removeChild(existingScript);
+        }
+      };
+    }
+  }, []);
+
+  if (!apiKey) {
     return (
-      <div className="bg-gray-100 rounded-lg p-8 text-center min-h-[400px] flex flex-col items-center justify-center">
-        <div className="text-gray-500 mb-4">
-          <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-          </svg>
+      <div className="flex items-center justify-center h-96 bg-yellow-50 rounded-lg">
+        <div className="text-center">
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🗺️</div>
+          <p style={{ color: 'var(--warning-500)' }}>Google Maps API Key Missing</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--gray-500)', marginTop: '0.25rem' }}>
+            Please configure VITE_GOOGLE_MAPS_API_KEY in your .env file.
+          </p>
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Interactive Map</h3>
-        <p className="text-gray-600">Search for places to see them on the map</p>
+      </div>
+    );
+  }
+
+  if (!scriptLoaded) {
+    return (
+      <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+        <div className="text-center">
+          <div className="spinner"></div>
+          <p style={{ color: 'var(--gray-600)', marginTop: '0.5rem' }}>Loading Google Maps...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Interactive Map</h3>
-        <p className="text-sm text-gray-600">
-          {places.length} places found within {radiusMiles || 10} miles
-        </p>
-      </div>
-      
-      <Wrapper apiKey={apiKey} render={render}>
-        <MapComponent
-          places={places}
-          userLocation={userLocation}
-          searchCenter={searchCenter}
-          radiusMiles={radiusMiles}
-          onPlaceClick={onPlaceClick}
-          selectedPlace={selectedPlace}
-        />
-      </Wrapper>
-      
-      {/* Legend */}
-      <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 max-w-xs z-10">
-        <h4 className="text-sm font-medium text-gray-900 mb-2">Categories</h4>
-        <div className="space-y-1">
-          {searchCenter && (
-            <div className="flex items-center text-xs">
-              <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-              <span>Search Location</span>
-            </div>
-          )}
-          {userLocation && (
-            <div className="flex items-center text-xs">
-              <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-              <span>Your Location</span>
-            </div>
-          )}
-          {Array.from(new Set(places.flatMap(p => p.categories || []).map(c => c.name))).map(categoryName => {
-            const categoryColors: Record<string, string> = {
-              'Food Assistance': '#EF4444',
-              'Healthcare': '#10B981',
-              'Housing': '#F59E0B',
-              'Legal Aid': '#8B5CF6',
-              'Family Services': '#EC4899',
-              'Employment': '#06B6D4',
-              'Education': '#84CC16'
-            };
-            const color = categoryColors[categoryName] || '#6B7280';
-            
-            return (
-              <div key={categoryName} className="flex items-center text-xs">
-                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></div>
-                <span>{categoryName}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      
-      {/* Map Popup */}
-      {selectedPlace && onClosePopup && (
-        <MapPopup
-          place={selectedPlace}
-          onClose={onClosePopup}
-          userLocation={userLocation}
-        />
-      )}
-    </div>
+    <Wrapper apiKey={apiKey} render={render}>
+      <MapComponent {...props} />
+    </Wrapper>
   );
-}
+};
+
+export default GoogleMaps;

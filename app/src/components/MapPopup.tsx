@@ -1,140 +1,121 @@
+import React from 'react';
 import type { Place } from '../types';
 
 interface MapPopupProps {
-  place: Place;
+  place: Place | null;
+  isOpen: boolean;
   onClose: () => void;
-  userLocation?: { latitude: number; longitude: number };
 }
 
-export default function MapPopup({ place, onClose }: MapPopupProps) {
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+const MapPopup: React.FC<MapPopupProps> = ({ place, isOpen, onClose }) => {
+  if (!isOpen || !place) return null;
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={handleBackdropClick}
+      className="flex items-center justify-center"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 50,
+        padding: '1rem'
+      }}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-neutral-200 flex-shrink-0">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-neutral-900 mb-2">{place.name}</h3>
-              
-              <div className="mb-1">
-                <p className="text-sm text-neutral-600 mb-1">Community resource found via Google Places</p>
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                  place.status === 'active' 
-                    ? 'bg-accent-100 text-accent-800' 
-                    : 'bg-neutral-100 text-neutral-800'
-                }`}>
-                  {place.status === 'active' ? '✅ Active' : '⏸️ Inactive'}
-                </span>
-              </div>
-            </div>
-            
+      <div 
+        className="card"
+        style={{
+          maxWidth: '28rem',
+          width: '100%',
+          maxHeight: '90vh',
+          overflowY: 'auto'
+        }}
+      >
+        <div className="card-body">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-lg font-semibold" style={{ paddingRight: '1rem' }}>{place.name}</h3>
             <button
               onClick={onClose}
-              className="ml-4 p-2 hover:bg-neutral-100 rounded-full transition-colors"
-              aria-label="Close popup"
+              className="btn btn-secondary"
+              style={{ 
+                padding: '0.5rem',
+                minWidth: 'auto',
+                flexShrink: 0
+              }}
             >
-              <svg className="w-6 h-6 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="px-4 pb-4 pt-2 space-y-1 flex-1">
-          {/* Distance */}
-          {place.distance !== undefined && (
-            <div className="flex items-center gap-2 font-medium text-primary-600 bg-primary-50 px-3 py-2 rounded-lg">
-              <span className="text-xl">📍</span>
-              <span className="text-lg">{place.distance} miles away</span>
-            </div>
+          {/* Description */}
+          {place.description && (
+            <p style={{ color: 'var(--gray-600)', marginBottom: '1rem' }}>{place.description}</p>
           )}
 
-          {/* Contact Information */}
-          <div className="space-y-1">
-            {place.addressLine1 && (
-              <div className="flex items-start gap-2">
-                <span className="text-lg mt-0.5">🏢</span>
-                <div>
-                  <p className="font-medium text-neutral-900 text-sm">{place.addressLine1}</p>
-                  {place.addressLine2 && (
-                    <p className="text-neutral-600 text-sm">{place.addressLine2}</p>
-                  )}
-                  {(place.city || place.state || place.postalCode) && (
-                    <p className="text-neutral-600 text-sm">
-                      {[place.city, place.state, place.postalCode].filter(Boolean).join(', ')}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Address */}
+          <div style={{ marginBottom: '1rem' }}>
+            <h4 style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--gray-700)', marginBottom: '0.25rem' }}>Address</h4>
+            <p style={{ color: 'var(--gray-600)' }}>
+              {place.address}, {place.city}, {place.state} {place.zipCode}
+            </p>
+          </div>
 
+          {/* Contact Information */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
             {place.phone && (
-              <div className="flex items-center gap-2">
-                <span className="text-lg">📞</span>
-                <div>
-                  <p className="font-medium text-neutral-900 text-sm">Phone</p>
-                  <a 
-                    href={`tel:${place.phone}`}
-                    className="text-accent-600 hover:text-accent-700 transition-colors text-sm"
-                  >
-                    {place.phone}
-                  </a>
-                </div>
+              <div>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--gray-700)', marginBottom: '0.25rem' }}>Phone</h4>
+                <a 
+                  href={`tel:${place.phone}`}
+                  style={{ color: 'var(--primary-600)', textDecoration: 'none' }}
+                >
+                  {place.phone}
+                </a>
               </div>
             )}
 
             {place.email && (
-              <div className="flex items-center gap-2">
-                <span className="text-lg">✉️</span>
-                <div>
-                  <p className="font-medium text-neutral-900 text-sm">Email</p>
-                  <a 
-                    href={`mailto:${place.email}`}
-                    className="text-secondary-600 hover:text-secondary-700 transition-colors text-sm"
-                  >
-                    {place.email}
-                  </a>
-                </div>
+              <div>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--gray-700)', marginBottom: '0.25rem' }}>Email</h4>
+                <a 
+                  href={`mailto:${place.email}`}
+                  style={{ color: 'var(--primary-600)', textDecoration: 'none' }}
+                >
+                  {place.email}
+                </a>
               </div>
             )}
 
             {place.website && (
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🌐</span>
-                <div>
-                  <p className="font-medium text-neutral-900 text-sm">Website</p>
-                  <a 
-                    href={place.website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-700 hover:bg-primary-200 transition-colors"
-                  >
-                    Visit Website
-                  </a>
-                </div>
+              <div>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--gray-700)', marginBottom: '0.25rem' }}>Website</h4>
+                <a 
+                  href={place.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--primary-600)', textDecoration: 'none', wordBreak: 'break-all' }}
+                >
+                  {place.website}
+                </a>
               </div>
             )}
           </div>
 
           {/* Categories */}
           {place.categories && place.categories.length > 0 && (
-            <div className="border-t border-neutral-200 pt-2">
-              <h4 className="text-sm font-medium text-neutral-700 mb-2">Categories</h4>
-              <div className="flex flex-wrap gap-2">
+            <div style={{ marginBottom: '1rem' }}>
+              <h4 style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--gray-700)', marginBottom: '0.5rem' }}>Categories</h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {place.categories.map((category) => (
-                  <span 
+                  <span
                     key={category.id}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800"
+                    className="badge badge-primary"
+                    style={{ fontSize: '0.75rem' }}
                   >
                     {category.name}
                   </span>
@@ -143,8 +124,29 @@ export default function MapPopup({ place, onClose }: MapPopupProps) {
             </div>
           )}
 
+          {/* Status and Close Button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid var(--gray-200)' }}>
+            <span className={`badge ${
+              place.status === 'active' 
+                ? 'badge-success' 
+                : place.status === 'inactive'
+                ? 'badge-error'
+                : 'badge-warning'
+            }`} style={{ fontSize: '0.75rem' }}>
+              {place.status}
+            </span>
+            
+            <button
+              onClick={onClose}
+              className="btn btn-primary"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default MapPopup;

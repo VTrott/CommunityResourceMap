@@ -1,4 +1,4 @@
-package com.community.crm.place;
+package com.community.crm;
 
 import java.time.Instant;
 import java.util.HashMap;
