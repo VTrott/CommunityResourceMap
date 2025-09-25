@@ -27,7 +27,7 @@ public class UserProfile {
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
-    @Column(name = "preferences", columnDefinition = "jsonb")
+    @Column(name = "preferences", columnDefinition = "clob")
     private String preferences;
 
     @Column(name = "created_at")

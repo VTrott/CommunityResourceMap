@@ -42,22 +42,6 @@ public class PlaceSearchController {
             return ResponseEntity.ok(response);
         }
         
-    /**
-     * Test endpoint with coordinates
-     */
-    @GetMapping("/test-coords")
-        public ResponseEntity<Map<String, Object>> testCoords(
-            @RequestParam("latitude") double latitude,
-            @RequestParam("longitude") double longitude) {
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Test endpoint working with coordinates");
-        response.put("latitude", latitude);
-        response.put("longitude", longitude);
-        response.put("apiKeyLength", googleMapsApiKey.length());
-        response.put("apiKeyConfigured", !googleMapsApiKey.isEmpty());
-        return ResponseEntity.ok(response);
-    }
     
     /**
      * Search places within 5 miles

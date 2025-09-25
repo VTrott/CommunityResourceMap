@@ -17,7 +17,7 @@ public class Submission {
     @Column(name = "place_id")
     private UUID placeId;
 
-    @Column(name = "payload", columnDefinition = "jsonb")
+    @Column(name = "payload", columnDefinition = "clob")
     private String payload;
 
     @Column(name = "status", nullable = false)

@@ -1,9 +1,8 @@
 package com.community.crm.place;
 
 import com.community.crm.category.Category;
-import com.community.crm.category.CategoryRepository;
 import com.community.crm.external.ExternalApiService;
-import com.community.crm.external.ApiResponse;
+import com.community.crm.external.GoogleServiceAccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,19 +22,14 @@ public class PlaceSearchService {
     
     private static final Logger logger = LoggerFactory.getLogger(PlaceSearchService.class);
     
-    private final PlaceRepository placeRepository;
-    private final CategoryRepository categoryRepository;
     private final ExternalApiService externalApiService;
+    private final GoogleServiceAccountService serviceAccountService;
     
-    @Value("${app.external-apis.google-maps.api-key:}")
-    private String googleMapsApiKey;
     
-    public PlaceSearchService(PlaceRepository placeRepository, 
-                            CategoryRepository categoryRepository,
-                            ExternalApiService externalApiService) {
-        this.placeRepository = placeRepository;
-        this.categoryRepository = categoryRepository;
+    public PlaceSearchService(ExternalApiService externalApiService,
+                            GoogleServiceAccountService serviceAccountService) {
         this.externalApiService = externalApiService;
+        this.serviceAccountService = serviceAccountService;
     }
     
     /**
@@ -87,7 +81,7 @@ public class PlaceSearchService {
     }
     
     /**
-     * Search Google Places API asynchronously
+     * Search Google Places API asynchronously (New API with Service Account)
      */
     private CompletableFuture<List<Place>> searchGooglePlacesAsync(String query, 
                                                                   double latitude, 
@@ -105,19 +99,75 @@ public class PlaceSearchService {
             "maxResultCount", 20
         );
         
-        return externalApiService.callGooglePlacesApi(requestBody)
-            .thenApply(response -> {
-                if (response.isSuccess() && response.getData() != null) {
-                    return processGooglePlacesResponse(response.getData(), latitude, longitude);
-                } else {
-                    logger.warn("Google Places API call failed for query '{}': {}", query, response.getError());
-                    return Collections.<Place>emptyList();
-                }
-            });
+        logger.info("Searching Google Places API for query: '{}' at location: {},{} with radius: {}m", 
+                   query, latitude, longitude, radiusMeters);
+        
+        // Use Service Account for Google Places API
+        if (serviceAccountService.isConfigured()) {
+            return serviceAccountService.getValidAccessToken()
+                .thenCompose(accessToken -> {
+                    if (accessToken != null) {
+                        logger.info("Using Service Account for Google Places API");
+                        return callNewGooglePlacesApi(requestBody, accessToken, latitude, longitude);
+                    } else {
+                        logger.error("Service Account failed to get access token");
+                        return CompletableFuture.completedFuture(Collections.emptyList());
+                    }
+                })
+                .exceptionally(throwable -> {
+                    logger.error("Service Account failed: {}", throwable.getMessage());
+                    return Collections.emptyList();
+                });
+        } else {
+            logger.error("Service Account not configured");
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
     }
     
+    
     /**
-     * Process Google Places API response
+     * Call the new Google Places API with Service Account
+     */
+    private CompletableFuture<List<Place>> callNewGooglePlacesApi(Map<String, Object> requestBody, 
+                                                                 String accessToken, 
+                                                                 double latitude, 
+                                                                 double longitude) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                String url = "https://places.googleapis.com/v1/places:searchText";
+                
+                org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.set("Content-Type", "application/json");
+                headers.set("Authorization", "Bearer " + accessToken);
+                headers.set("X-Goog-FieldMask", "places.displayName,places.formattedAddress,places.location,places.types,places.id,places.websiteUri,places.nationalPhoneNumber");
+                
+                org.springframework.http.HttpEntity<Map<String, Object>> request = new org.springframework.http.HttpEntity<>(requestBody, headers);
+                
+                org.springframework.http.ResponseEntity<Map> response = restTemplate.exchange(
+                    url, 
+                    org.springframework.http.HttpMethod.POST, 
+                    request, 
+                    Map.class
+                );
+                
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    logger.info("Google Places API response received: {}", response.getBody());
+                    return processGooglePlacesResponse(response.getBody(), latitude, longitude);
+                } else {
+                    logger.warn("Google Places API call failed: {}", response.getStatusCode());
+                    return Collections.<Place>emptyList();
+                }
+            } catch (Exception e) {
+                logger.error("Error calling Google Places API", e);
+                return Collections.<Place>emptyList();
+            }
+        });
+    }
+    
+    
+    /**
+     * Process Google Places API response (New API)
      */
     private List<Place> processGooglePlacesResponse(Map<String, Object> responseBody, 
                                                    double latitude, 
@@ -142,12 +192,24 @@ public class PlaceSearchService {
     }
     
     /**
-     * Convert Google Places data to Place entity
+     * Convert Google Places data to Place entity (New API only)
      */
     public Place convertToPlace(Map<String, Object> placeData, double latitude, double longitude) {
         try {
-            String name = (String) placeData.get("displayName");
-            if (name == null || !isCommunityResource(name)) {
+            // Handle new Google Places API response format
+            String name = null;
+            if (placeData.containsKey("displayName")) {
+                Object displayNameObj = placeData.get("displayName");
+                if (displayNameObj instanceof String) {
+                    name = (String) displayNameObj;
+                } else if (displayNameObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> displayNameMap = (Map<String, Object>) displayNameObj;
+                    name = (String) displayNameMap.get("text");
+                }
+            }
+            
+            if (name == null || !isCommunityResource(name, placeData)) {
                 return null;
             }
             
@@ -155,33 +217,61 @@ public class PlaceSearchService {
             place.setName(name);
             place.setDescription("Community resource found via Google Places");
             
-            // Set location
-            @SuppressWarnings("unchecked")
-            Map<String, Object> location = (Map<String, Object>) placeData.get("location");
-            if (location != null) {
-                Double lat = (Double) location.get("latitude");
-                Double lng = (Double) location.get("longitude");
-                if (lat != null && lng != null) {
-                    place.setLatitude(BigDecimal.valueOf(lat));
-                    place.setLongitude(BigDecimal.valueOf(lng));
-                    // Note: Place entity doesn't have distance field, we'll calculate it in the result
+            // Set location - new API format only
+            Double lat = null;
+            Double lng = null;
+
+            if (placeData.containsKey("location")) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> location = (Map<String, Object>) placeData.get("location");
+                if (location != null) {
+                    lat = (Double) location.get("latitude");
+                    lng = (Double) location.get("longitude");
                 }
             }
             
-            // Set address
-            String address = (String) placeData.get("formattedAddress");
+            if (lat != null && lng != null) {
+                place.setLatitude(BigDecimal.valueOf(lat));
+                place.setLongitude(BigDecimal.valueOf(lng));
+                
+                // Calculate distance and filter out places that are too far
+                double distance = calculateDistance(latitude, longitude, lat, lng);
+                if (distance > 100) { // Filter out places more than 100 miles away
+                    return null;
+                }
+            }
+            
+            // Set address - new API format only
+            String address = null;
+            if (placeData.containsKey("formattedAddress")) {
+                address = (String) placeData.get("formattedAddress");
+            }
+            
             if (address != null) {
                 String[] addressParts = address.split(",");
                 if (addressParts.length >= 3) {
                     place.setAddressLine1(addressParts[0].trim());
                     place.setCity(addressParts[1].trim());
                     place.setState(addressParts[2].trim());
+                } else {
+                    // If we can't parse the address, use the full formatted address
+                    place.setAddressLine1(address);
                 }
             }
             
-            // Set other fields
-            place.setPhone((String) placeData.get("nationalPhoneNumber"));
-            place.setWebsite((String) placeData.get("websiteUri"));
+            // Set other fields - new API format only
+            String phone = null;
+            if (placeData.containsKey("nationalPhoneNumber")) {
+                phone = (String) placeData.get("nationalPhoneNumber");
+            }
+            place.setPhone(phone);
+
+            String website = null;
+            if (placeData.containsKey("websiteUri")) {
+                website = (String) placeData.get("websiteUri");
+            }
+            place.setWebsite(website);
+            
             place.setStatus("active");
             
             // Set categories based on place name and types
@@ -195,6 +285,7 @@ public class PlaceSearchService {
             return null;
         }
     }
+    
     
     /**
      * Get community-focused search queries
@@ -217,24 +308,24 @@ public class PlaceSearchService {
     }
     
     /**
-     * Check if a place is a community resource
+     * Check if a place is a community resource - simplified approach
      */
-    public boolean isCommunityResource(String name) {
+    public boolean isCommunityResource(String name, Map<String, Object> placeData) {
         if (name == null) return false;
         
-        String lowerName = name.toLowerCase();
-        
-        // Exclude commercial businesses
-        if (lowerName.contains("restaurant") || lowerName.contains("grocery") ||
-            lowerName.contains("convenience") || lowerName.contains("hotel") ||
-            lowerName.contains("bank") || lowerName.contains("mcdonald") ||
-            lowerName.contains("kfc") || lowerName.contains("subway") ||
-            lowerName.contains("walmart") || lowerName.contains("target") ||
-            lowerName.contains("costco")) {
-            return false;
+        // First check Google Places API types - this is more reliable
+        @SuppressWarnings("unchecked")
+        List<String> types = (List<String>) placeData.get("types");
+        if (types != null) {
+            for (String type : types) {
+                if (isCommunityResourceType(type)) {
+                    return true;
+                }
+            }
         }
         
-        // Include community resources
+        // Fallback to name-based filtering for food assistance specifically
+        String lowerName = name.toLowerCase();
         return lowerName.contains("food bank") || lowerName.contains("food pantry") ||
                lowerName.contains("soup kitchen") || lowerName.contains("community kitchen") ||
                lowerName.contains("meal program") || lowerName.contains("hunger relief") ||
@@ -249,32 +340,65 @@ public class PlaceSearchService {
                lowerName.contains("food cupboard") || lowerName.contains("food share") ||
                lowerName.contains("food drive") || lowerName.contains("food giveaway") ||
                lowerName.contains("food outreach") || lowerName.contains("food service") ||
-               lowerName.contains("food program") || lowerName.contains("shelter") ||
-               lowerName.contains("community center") || lowerName.contains("library") ||
-               lowerName.contains("hospital") || lowerName.contains("clinic") ||
-               lowerName.contains("pharmacy") || lowerName.contains("social services") ||
-               lowerName.contains("legal aid") || lowerName.contains("employment") ||
-               lowerName.contains("housing") || lowerName.contains("senior center") ||
-               lowerName.contains("youth center") || lowerName.contains("police") ||
-               lowerName.contains("fire station") || lowerName.contains("emergency") ||
-               lowerName.contains("community") || lowerName.contains("public") ||
-               lowerName.contains("nonprofit") || lowerName.contains("non-profit") ||
-               lowerName.contains("charity") || lowerName.contains("foundation") ||
-               lowerName.contains("government") || lowerName.contains("civic") ||
-               lowerName.contains("recreation center");
+               lowerName.contains("food program");
     }
     
     /**
-     * Get categories from place data
+     * Check if a Google Places API type indicates a community resource
+     */
+    private boolean isCommunityResourceType(String type) {
+        return type.equals("community_center") || type.equals("hospital") || 
+               type.equals("library") || type.equals("pharmacy") || 
+               type.equals("government_office") || type.equals("courthouse") ||
+               type.equals("child_care_agency") || type.equals("health") ||
+               type.equals("fitness_center") || type.equals("event_venue") ||
+               type.equals("gym") || type.equals("sports_activity_location") ||
+               type.equals("childrens_camp") || type.equals("summer_camp_organizer");
+        // Removed "point_of_interest" and "establishment" as they're too broad
+    }
+    
+    /**
+     * Get categories from place data (New API only)
      */
     private List<Category> getCategoriesFromPlaceData(Map<String, Object> placeData) {
-        String name = (String) placeData.get("displayName");
+        String name = null;
+        if (placeData.containsKey("displayName")) {
+            Object displayNameObj = placeData.get("displayName");
+            if (displayNameObj instanceof String) {
+                name = (String) displayNameObj;
+            } else if (displayNameObj instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> displayNameMap = (Map<String, Object>) displayNameObj;
+                name = (String) displayNameMap.get("text");
+            }
+        }
         if (name == null) return Collections.emptyList();
         
         String lowerName = name.toLowerCase();
         List<Category> categories = new ArrayList<>();
         
-        // Food Assistance keywords
+        // Get Google Places API types
+        @SuppressWarnings("unchecked")
+        List<String> types = (List<String>) placeData.get("types");
+        
+        // Categorize based on Google Places API types and name keywords
+        if (types != null) {
+            if (types.contains("pharmacy")) {
+                categories.add(createCategory("Healthcare", "2", "healthcare"));
+            } else if (types.contains("hospital") || types.contains("health")) {
+                categories.add(createCategory("Healthcare", "2", "healthcare"));
+            } else if (types.contains("library")) {
+                categories.add(createCategory("Education", "3", "education"));
+            } else if (types.contains("community_center") || types.contains("government_office")) {
+                categories.add(createCategory("Community Services", "4", "community-services"));
+            } else if (types.contains("fitness_center") || types.contains("gym") || types.contains("sports_activity_location")) {
+                categories.add(createCategory("Recreation", "5", "recreation"));
+            } else if (types.contains("child_care_agency")) {
+                categories.add(createCategory("Youth Services", "6", "youth-services"));
+            }
+        }
+        
+        // Food Assistance keywords (only for actual food assistance places)
         if (lowerName.contains("food bank") || lowerName.contains("food pantry") ||
             lowerName.contains("soup kitchen") || lowerName.contains("community kitchen") ||
             lowerName.contains("meal program") || lowerName.contains("hunger relief") ||
@@ -293,10 +417,14 @@ public class PlaceSearchService {
             categories.add(createCategory("Food Assistance", "1", "food-assistance"));
         }
         
-        // Add other category logic here...
+        // Default to Community Services if no specific category found
+        if (categories.isEmpty()) {
+            categories.add(createCategory("Community Services", "4", "community-services"));
+        }
         
         return categories;
     }
+    
     
     /**
      * Create a category
@@ -304,7 +432,6 @@ public class PlaceSearchService {
     private Category createCategory(String name, String id, String slug) {
         Category category = new Category();
         category.setName(name);
-        // Generate a proper UUID from the id string
         category.setId(UUID.nameUUIDFromBytes(id.getBytes()));
         category.setSlug(slug);
         return category;
@@ -314,10 +441,23 @@ public class PlaceSearchService {
      * Filter places by categories
      */
     private List<Place> filterByCategories(List<Place> places, List<String> categoryIds) {
+        // Map category IDs to category names for filtering
+        Map<String, String> categoryIdToName = Map.of(
+            "1", "Food Assistance",
+            "2", "Healthcare", 
+            "3", "Education",
+            "4", "Community Services",
+            "5", "Recreation",
+            "6", "Youth Services"
+        );
+        
         return places.stream()
             .filter(place -> place.getCategories() != null)
             .filter(place -> place.getCategories().stream()
-                .anyMatch(category -> categoryIds.contains(category.getId().toString())))
+                .anyMatch(category -> {
+                    String categoryName = categoryIdToName.get(categoryIds.get(0));
+                    return categoryName != null && categoryName.equals(category.getName());
+                }))
             .collect(Collectors.toList());
     }
     

@@ -126,7 +126,7 @@ export interface HealthResponse {
   version?: string;
 }
 
-// Backend response format (what we actually get from the API)
+
 interface BackendPlaceResponse {
   id: string;
   name: string;
@@ -193,17 +193,15 @@ const mockCategories: Category[] = [
   { id: '6', name: 'Transportation', description: 'Transportation assistance and services' },
 ];
 
-// Places API - Updated to match actual backend endpoints
+
 export const placesApi = {
-  // Get all places (mock for now)
+
   getAll: (): Promise<Place[]> => 
     Promise.resolve([]),
 
-  // Get place by ID (mock for now)
   getById: (id: string): Promise<Place> => 
     Promise.resolve({} as Place),
 
-  // Search places with radius - Updated to match backend endpoints and response format
   searchWithRadius: async (radiusMiles: number, request: PlaceSearchRequest): Promise<PlaceSearchResponse> => {
     const response = await apiCall<BackendSearchResponse>(`/places/search/${radiusMiles}-miles`, {
       method: 'POST',
@@ -219,7 +217,6 @@ export const placesApi = {
     };
   },
 
-  // Specific radius searches - Updated to match backend endpoints
   search5Miles: (request: PlaceSearchRequest): Promise<PlaceSearchResponse> =>
     placesApi.searchWithRadius(5, request),
 
@@ -232,33 +229,25 @@ export const placesApi = {
   search50Miles: (request: PlaceSearchRequest): Promise<PlaceSearchResponse> =>
     placesApi.searchWithRadius(50, request),
 
-  // Health check
   health: (): Promise<HealthResponse> =>
     apiCall<HealthResponse>('/health'),
 };
 
-// Categories API - Mock for now since backend doesn't have this endpoint
 export const categoriesApi = {
-  // Get all categories (mock for now)
   getAll: (): Promise<Category[]> => 
     Promise.resolve(mockCategories),
 
-  // Get category by ID (mock for now)
   getById: (id: string): Promise<Category> => 
     Promise.resolve(mockCategories.find(c => c.id === id) || mockCategories[0]),
 };
 
-// Events API - Mock for now since backend doesn't have this endpoint
 export const eventsApi = {
-  // Get all events (mock for now)
   getAll: (): Promise<Event[]> => 
     Promise.resolve([]),
 
-  // Get event by ID (mock for now)
   getById: (id: string): Promise<Event> => 
     Promise.resolve({} as Event),
 
-  // Search events (mock for now)
   search: (request: EventSearchRequest): Promise<EventSearchResponse> =>
     Promise.resolve({
       events: [],
@@ -269,24 +258,18 @@ export const eventsApi = {
     }),
 };
 
-// User Profiles API - Mock for now
 export const userProfilesApi = {
-  // Get user profile by external ID (mock for now)
   getByExternalId: (externalId: string, provider: string): Promise<UserProfile> =>
     Promise.resolve({} as UserProfile),
 
-  // Create user profile (mock for now)
   create: (request: CreateUserProfileRequest): Promise<UserProfile> =>
     Promise.resolve({} as UserProfile),
 
-  // Update user profile (mock for now)
   update: (id: string, request: Partial<CreateUserProfileRequest>): Promise<UserProfile> =>
     Promise.resolve({} as UserProfile),
 };
 
-// Main API object with all endpoints
 export const api = {
-  // Places
   getPlaces: placesApi.getAll,
   getPlace: placesApi.getById,
   searchPlacesWithRadius: placesApi.searchWithRadius,
@@ -296,16 +279,13 @@ export const api = {
   searchPlaces50Miles: placesApi.search50Miles,
   getPlacesHealth: placesApi.health,
 
-  // Categories
   getCategories: categoriesApi.getAll,
   getCategory: categoriesApi.getById,
 
-  // Events
   getEvents: eventsApi.getAll,
   getEvent: eventsApi.getById,
   searchEvents: eventsApi.search,
 
-  // User Profiles
   getUserProfile: userProfilesApi.getByExternalId,
   createUserProfile: userProfilesApi.create,
   updateUserProfile: userProfilesApi.update,
