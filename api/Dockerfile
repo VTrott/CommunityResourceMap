@@ -8,7 +8,7 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 mvn -q -e -B -DskipTests clean package && ls -la target/
 
 FROM eclipse-temurin:21-jre
-ENV JAVA_OPTS=""
+ENV JAVA_OPTS="-Xmx512m -Xms256m"
 WORKDIR /app
 COPY --from=build /workspace/target/community-resource-map-api-*.jar app.jar
 EXPOSE 8080

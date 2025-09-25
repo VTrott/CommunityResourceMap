@@ -35,3 +35,4 @@ This project requires several configuration files to run properly. Follow these 
 - Never commit `.env` or `application-local.yml` files to version control
 - These files contain sensitive API keys and credentials
 - Use the `.template` files as a reference for required configuration
+
