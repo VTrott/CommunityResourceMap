@@ -450,7 +450,7 @@ p {
 }
 
 .mobile-menu.open {
-  display: flex;
+  display: flex !important;
 }
 
 .mobile-menu-toggle {
@@ -523,7 +523,7 @@ p {
   }
   
   .mobile-menu {
-    display: flex;
+    display: none;
   }
   
   .grid-cols-2,

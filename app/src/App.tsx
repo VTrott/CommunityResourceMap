@@ -24,7 +24,7 @@ function App() {
           <div className="container">
             <div className="flex justify-between items-center" style={{ height: '4rem' }}>
               <div className="flex items-center">
-                <Link to="/" className="text-2xl font-bold" style={{ color: 'var(--primary-600)' }}>
+                <Link to="/" className="text-2xl font-bold" style={{ color: 'var(--primary-600)', textDecoration: 'none' }}>
                   Community Resource Map
                 </Link>
               </div>
