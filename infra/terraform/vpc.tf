@@ -10,7 +10,7 @@ module "vpc" {
   public_subnets  = [for i in range(var.availability_zones) : cidrsubnet(var.vpc_cidr, 8, i + 10)]
 
   enable_nat_gateway   = true
-  single_nat_gateway   = var.environment == "dev" ? true : false
+  single_nat_gateway   = var.environment != "prod" ? true : false
   enable_dns_hostnames = true
   enable_dns_support   = true
 

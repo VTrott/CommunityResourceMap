@@ -28,10 +28,11 @@ output "api_service_name" {
   value       = module.api_service.service_name
 }
 
-output "frontend_service_name" {
-  description = "Name of the frontend ECS service"
-  value       = module.frontend_service.service_name
-}
+# Frontend is now served from S3 + CloudFront
+# output "frontend_service_name" {
+#   description = "Name of the frontend ECS service"
+#   value       = module.frontend_service.service_name
+# }
 
 output "database_endpoint" {
   description = "RDS instance endpoint"
@@ -54,6 +55,17 @@ output "ecr_frontend_repository_url" {
 }
 
 output "application_url" {
-  description = "URL of the application"
+  description = "URL of the application (via ALB for now)"
   value       = var.domain_name != "" ? "https://${var.domain_name}" : "http://${module.alb.alb_dns_name}"
 }
+
+# CloudFront URLs temporarily disabled due to IAM permissions
+# output "api_url" {
+#   description = "URL of the API (via CloudFront)"
+#   value       = "https://${aws_cloudfront_distribution.api.domain_name}"
+# }
+#
+# output "frontend_cloudfront_url" {
+#   description = "CloudFront URL for frontend"
+#   value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+# }

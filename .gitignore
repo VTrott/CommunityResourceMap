@@ -365,4 +365,7 @@ infra/terraform/terraform.tfstate.backup
 infra/terraform/terraform.tfstate.d/
 infra/terraform/tfplan
 infra/terraform/tfplan.*
+terraform.tfstate*
+*.tfstate
+*.tfstate.*
 

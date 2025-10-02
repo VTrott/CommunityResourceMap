@@ -25,25 +25,26 @@ resource "aws_cloudwatch_dashboard" "main" {
           period  = 300
         }
       },
-      {
-        type   = "metric"
-        x      = 12
-        y      = 0
-        width  = 12
-        height = 6
-
-        properties = {
-          metrics = [
-            ["AWS/ECS", "CPUUtilization", "ServiceName", module.frontend_service.service_name, "ClusterName", module.ecs_cluster.cluster_id],
-            [".", "MemoryUtilization", ".", ".", ".", "."]
-          ]
-          view    = "timeSeries"
-          stacked = false
-          region  = var.aws_region
-          title   = "Frontend Service Metrics"
-          period  = 300
-        }
-      },
+      # Frontend is now served from S3 + CloudFront, no ECS metrics
+      # {
+      #   type   = "metric"
+      #   x      = 12
+      #   y      = 0
+      #   width  = 12
+      #   height = 6
+      #
+      #   properties = {
+      #     metrics = [
+      #       ["AWS/ECS", "CPUUtilization", "ServiceName", module.frontend_service.service_name, "ClusterName", module.ecs_cluster.cluster_id],
+      #       [".", "MemoryUtilization", ".", ".", ".", "."]
+      #     ]
+      #     view    = "timeSeries"
+      #     stacked = false
+      #     region  = var.aws_region
+      #     title   = "Frontend Service Metrics"
+      #     period  = 300
+      #   }
+      # },
       {
         type   = "metric"
         x      = 0
@@ -196,9 +197,10 @@ resource "aws_cloudwatch_log_group" "api_logs" {
   tags = local.common_tags
 }
 
-resource "aws_cloudwatch_log_group" "frontend_logs" {
-  name              = "/aws/ecs/${var.project_name}-${var.environment}-frontend"
-  retention_in_days = 7
-
-  tags = local.common_tags
-}
+# Frontend is now served from S3 + CloudFront, no ECS logs
+# resource "aws_cloudwatch_log_group" "frontend_logs" {
+#   name              = "/aws/ecs/${var.project_name}-${var.environment}-frontend"
+#   retention_in_days = 7
+#
+#   tags = local.common_tags
+# }

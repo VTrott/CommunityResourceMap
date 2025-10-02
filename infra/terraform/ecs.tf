@@ -45,31 +45,33 @@ module "api_service" {
   tags = local.common_tags
 }
 
-module "frontend_service" {
-  source = "./modules/ecs-service"
-
-  project_name = var.project_name
-  environment  = var.environment
-  service_name = "frontend"
-
-  cluster_id   = module.ecs_cluster.cluster_id
-  cluster_name = module.ecs_cluster.cluster_id
-  vpc_id       = module.vpc.vpc_id
-
-  private_subnet_ids = module.vpc.private_subnets
-  security_group_ids = [module.alb.ecs_tasks_security_group_id]
-
-  target_group_arn = module.alb.frontend_target_group_arn
-  container_port   = 80
-
-  cpu    = var.frontend_cpu
-  memory = var.frontend_memory
-
-  container_image = module.ecr.frontend_repository_url
-  container_name  = "frontend"
-
-  min_capacity = var.min_capacity
-  max_capacity = var.max_capacity
-
-  tags = local.common_tags
-}
+# Frontend is now served from S3 + CloudFront instead of ECS Fargate
+# This provides significant cost savings (~$15-20/month)
+# module "frontend_service" {
+#   source = "./modules/ecs-service"
+#
+#   project_name = var.project_name
+#   environment  = var.environment
+#   service_name = "frontend"
+#
+#   cluster_id   = module.ecs_cluster.cluster_id
+#   cluster_name = module.ecs_cluster.cluster_id
+#   vpc_id       = module.vpc.vpc_id
+#
+#   private_subnet_ids = module.vpc.private_subnets
+#   security_group_ids = [module.alb.ecs_tasks_security_group_id]
+#
+#   target_group_arn = module.alb.frontend_target_group_arn
+#   container_port   = 80
+#
+#   cpu    = var.frontend_cpu
+#   memory = var.frontend_memory
+#
+#   container_image = module.ecr.frontend_repository_url
+#   container_name  = "frontend"
+#
+#   min_capacity = var.min_capacity
+#   max_capacity = var.max_capacity
+#
+#   tags = local.common_tags
+# }

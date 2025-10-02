@@ -1,5 +1,5 @@
-# Free Tier Configuration for CommunityConnect
-# Optimized for employer showcase - $0-15/month
+# Cost-Optimized Configuration for CommunityConnect
+# Optimized for cost savings - $5-15/month (down from ~$47/month)
 
 # AWS Configuration
 aws_region = "us-east-1"
@@ -18,11 +18,12 @@ database_allocated_storage   = 20             # Free Tier: 20GB
 database_max_allocated_storage = 20           # No auto-scaling
 database_password = "72qZBSZd8MNEX2r1DGbU0koaS"
 
-# Application Configuration - Minimal for free tier
+# Application Configuration - Optimized for cost savings
 api_cpu     = 256   # 0.25 vCPU (Free Tier: 750 hours/month)
-api_memory  = 512   # 512 MB RAM
-frontend_cpu    = 256   # 0.25 vCPU
-frontend_memory = 512   # 512 MB RAM
+api_memory  = 512   # 512 MB RAM (minimum for 256 CPU)
+# Frontend now served from S3 + CloudFront (saves ~$15-20/month)
+frontend_cpu    = 128   # Not used - frontend is static
+frontend_memory = 256   # Not used - frontend is static
 
 # Scaling Configuration - Single instance
 min_capacity = 1

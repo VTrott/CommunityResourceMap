@@ -73,30 +73,30 @@ resource "aws_lb_target_group" "api" {
   })
 }
 
-# Target group for frontend
-resource "aws_lb_target_group" "frontend" {
-  name        = "crm-${var.environment}-frontend-tg"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-    interval            = 30
-    path                = "/"
-    matcher             = "200"
-    port                = "traffic-port"
-    protocol            = "HTTP"
-  }
-
-  tags = merge(var.tags, {
-    Name = "${var.project_name}-${var.environment}-frontend-tg"
-  })
-}
+# Frontend is now served from S3 + CloudFront, no target group needed
+# resource "aws_lb_target_group" "frontend" {
+#   name        = "crm-${var.environment}-frontend-tg"
+#   port        = 80
+#   protocol    = "HTTP"
+#   vpc_id      = var.vpc_id
+#   target_type = "ip"
+#
+#   health_check {
+#     enabled             = true
+#     healthy_threshold   = 2
+#     unhealthy_threshold = 2
+#     timeout             = 5
+#     interval            = 30
+#     path                = "/"
+#     matcher             = "200"
+#     port                = "traffic-port"
+#     protocol            = "HTTP"
+#   }
+#
+#   tags = merge(var.tags, {
+#     Name = "${var.project_name}-${var.environment}-frontend-tg"
+#   })
+# }
 
 # HTTP listener
 resource "aws_lb_listener" "http" {
@@ -115,7 +115,7 @@ resource "aws_lb_listener" "http" {
       for_each = var.certificate_arn == "" ? [1] : []
       content {
         target_group {
-          arn = aws_lb_target_group.frontend.arn
+          arn = aws_lb_target_group.api.arn
         }
       }
     }
@@ -133,7 +133,7 @@ resource "aws_lb_listener" "https" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
+    target_group_arn = aws_lb_target_group.api.arn
   }
 }
 

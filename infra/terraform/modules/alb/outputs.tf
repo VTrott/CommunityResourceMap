@@ -18,10 +18,11 @@ output "api_target_group_arn" {
   value       = aws_lb_target_group.api.arn
 }
 
-output "frontend_target_group_arn" {
-  description = "ARN of the frontend target group"
-  value       = aws_lb_target_group.frontend.arn
-}
+# Frontend is now served from S3 + CloudFront
+# output "frontend_target_group_arn" {
+#   description = "ARN of the frontend target group"
+#   value       = aws_lb_target_group.frontend.arn
+# }
 
 output "ecs_tasks_security_group_id" {
   description = "Security group ID for ECS tasks"
